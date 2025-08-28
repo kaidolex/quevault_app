@@ -59,146 +59,156 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
     return Scaffold(
       body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: AppSpacing.paddingMD,
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: AppSpacing.maxContentWidth),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // Header Section
-                    Column(
-                      children: [
-                        Icon(Icons.lock_rounded, size: AppSpacing.xxl, color: Theme.of(context).colorScheme.primary),
-                        AppSpacing.verticalSpacingMD,
-                        Text(
-                          'Welcome Back',
-                          style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold),
-                          textAlign: TextAlign.center,
-                        ),
-                        AppSpacing.verticalSpacingXS,
-                        Text(
-                          'Enter your master password to access your vault',
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
-                    ),
+        child: Container(
+          color: Theme.of(context).colorScheme.background,
+          child: Center(
+            child: SingleChildScrollView(
+              padding: AppSpacing.paddingMD,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: AppSpacing.maxContentWidth),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // Header Section
+                      Column(
+                        children: [
+                          Icon(Icons.lock_rounded, size: AppSpacing.xxl, color: Theme.of(context).colorScheme.primary),
+                          AppSpacing.verticalSpacingMD,
+                          Text(
+                            'Welcome Back',
+                            style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold),
+                            textAlign: TextAlign.center,
+                          ),
+                          AppSpacing.verticalSpacingXS,
+                          Text(
+                            'Enter your master password to access your vault',
+                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
 
-                    AppSpacing.verticalSpacingLG,
+                      AppSpacing.verticalSpacingLG,
 
-                    // Login Form Card
-                    ShadCard(
-                      child: Padding(
-                        padding: AppSpacing.paddingMD,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            // Master Password Field
-                            TextFormField(
-                              controller: _passwordController,
-                              obscureText: !_isPasswordVisible,
-                              decoration: InputDecoration(
-                                labelText: 'Master Password',
-                                hintText: 'Enter your master password',
-                                prefixIcon: const Icon(Icons.key),
-                                suffixIcon: IconButton(
-                                  icon: Icon(_isPasswordVisible ? Icons.visibility_off : Icons.visibility),
-                                  onPressed: () {
-                                    setState(() {
-                                      _isPasswordVisible = !_isPasswordVisible;
-                                    });
-                                  },
-                                ),
-                                border: const OutlineInputBorder(),
-                              ),
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'Master password is required';
-                                }
-                                return null;
-                              },
-                              onFieldSubmitted: (_) => _handleLogin(),
-                            ),
-
-                            AppSpacing.verticalSpacingLG,
-
-                            // Login Button
-                            ShadButton(
-                              onPressed: authState.isLoading ? null : _handleLogin,
-                              child: authState.isLoading
-                                  ? const Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)),
-                                        SizedBox(width: 8),
-                                        Text('Unlocking...'),
-                                      ],
-                                    )
-                                  : const Text('Unlock Vault'),
-                            ),
-
-                            // Biometric Login Button
-                            if (authState.isBiometricAvailable && authState.isBiometricEnabled) ...[
-                              AppSpacing.verticalSpacingMD,
-                              Row(
-                                children: [
-                                  Expanded(child: Divider(color: Colors.grey[300])),
-                                  Padding(
-                                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                                    child: Text('OR', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey[600])),
+                      // Login Form Card
+                      ShadCard(
+                        backgroundColor: Theme.of(context).colorScheme.surface,
+                        child: Padding(
+                          padding: AppSpacing.paddingMD,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              // Master Password Field
+                              TextFormField(
+                                controller: _passwordController,
+                                obscureText: !_isPasswordVisible,
+                                decoration: InputDecoration(
+                                  labelText: 'Master Password',
+                                  hintText: 'Enter your master password',
+                                  prefixIcon: const Icon(Icons.key),
+                                  suffixIcon: IconButton(
+                                    icon: Icon(_isPasswordVisible ? Icons.visibility_off : Icons.visibility),
+                                    onPressed: () {
+                                      setState(() {
+                                        _isPasswordVisible = !_isPasswordVisible;
+                                      });
+                                    },
                                   ),
-                                  Expanded(child: Divider(color: Colors.grey[300])),
-                                ],
+                                  border: const OutlineInputBorder(),
+                                ),
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return 'Master password is required';
+                                  }
+                                  return null;
+                                },
+                                onFieldSubmitted: (_) => _handleLogin(),
                               ),
-                              AppSpacing.verticalSpacingMD,
-                              ShadButton.outline(
-                                onPressed: authState.isLoading ? null : _handleBiometricLogin,
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
+
+                              AppSpacing.verticalSpacingLG,
+
+                              // Login Button
+                              ShadButton(
+                                onPressed: authState.isLoading ? null : _handleLogin,
+                                child: authState.isLoading
+                                    ? const Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)),
+                                          SizedBox(width: 8),
+                                          Text('Unlocking...'),
+                                        ],
+                                      )
+                                    : const Text('Unlock Vault'),
+                              ),
+
+                              // Biometric Login Button
+                              if (authState.isBiometricAvailable && authState.isBiometricEnabled) ...[
+                                AppSpacing.verticalSpacingMD,
+                                Row(
                                   children: [
-                                    const Icon(Icons.fingerprint, size: 20),
-                                    const SizedBox(width: 8),
-                                    Text('Unlock with ${authState.biometricType}'),
+                                    Expanded(child: Divider(color: Theme.of(context).dividerColor)),
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                                      child: Text(
+                                        'OR',
+                                        style: Theme.of(
+                                          context,
+                                        ).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
+                                      ),
+                                    ),
+                                    Expanded(child: Divider(color: Theme.of(context).dividerColor)),
                                   ],
                                 ),
+                                AppSpacing.verticalSpacingMD,
+                                ShadButton.outline(
+                                  onPressed: authState.isLoading ? null : _handleBiometricLogin,
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(Icons.fingerprint, size: 20),
+                                      const SizedBox(width: 8),
+                                      Text('Unlock with ${authState.biometricType}'),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ),
+
+                      AppSpacing.verticalSpacingMD,
+
+                      // Security Info Card
+                      ShadCard(
+                        backgroundColor: Theme.of(context).colorScheme.surface,
+                        child: Padding(
+                          padding: AppSpacing.paddingMD,
+                          child: Column(
+                            children: [
+                              Row(
+                                children: [
+                                  const Icon(Icons.info_outline, size: 20),
+                                  AppSpacing.horizontalSpacingSM,
+                                  Text('Security Notice', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+                                ],
+                              ),
+                              AppSpacing.verticalSpacingSM,
+                              Text(
+                                'Your master password is never saved in plain text on this device. Only a cryptographic hash is stored for verification. When you enter your password, it unlocks your encrypted vault locally on your device, ensuring your data remains private and secure.',
+                                style: Theme.of(context).textTheme.bodySmall,
+                                textAlign: TextAlign.left,
                               ),
                             ],
-                          ],
+                          ),
                         ),
                       ),
-                    ),
-
-                    AppSpacing.verticalSpacingMD,
-
-                    // Security Info Card
-                    ShadCard(
-                      child: Padding(
-                        padding: AppSpacing.paddingMD,
-                        child: Column(
-                          children: [
-                            Row(
-                              children: [
-                                const Icon(Icons.info_outline, size: 20),
-                                AppSpacing.horizontalSpacingSM,
-                                Text('Security Notice', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
-                              ],
-                            ),
-                            AppSpacing.verticalSpacingSM,
-                            Text(
-                              'Your master password is never saved in plain text on this device. Only a cryptographic hash is stored for verification. When you enter your password, it unlocks your encrypted vault locally on your device, ensuring your data remains private and secure.',
-                              style: Theme.of(context).textTheme.bodySmall,
-                              textAlign: TextAlign.left,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
