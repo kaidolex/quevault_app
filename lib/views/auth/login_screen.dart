@@ -3,7 +3,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 import 'package:quevault_app/core/constants/app_spacing.dart';
 import 'package:quevault_app/viewmodels/auth_viewmodel.dart';
-import 'package:quevault_app/views/auth/home_screen.dart';
+import 'package:quevault_app/views/home/home_screen.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -149,9 +149,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             ),
                             AppSpacing.verticalSpacingSM,
                             Text(
-                              'Your master password is never stored on this device. It\'s used to decrypt your vault locally.',
+                              'Your master password is never saved in plain text on this device. Only a cryptographic hash is stored for verification. When you enter your password, it unlocks your encrypted vault locally on your device, ensuring your data remains private and secure.',
                               style: Theme.of(context).textTheme.bodySmall,
-                              textAlign: TextAlign.center,
+                              textAlign: TextAlign.left,
                             ),
                           ],
                         ),

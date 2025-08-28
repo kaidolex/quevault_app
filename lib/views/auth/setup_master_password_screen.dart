@@ -5,7 +5,6 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:quevault_app/core/constants/app_spacing.dart';
 import 'package:quevault_app/viewmodels/auth_viewmodel.dart';
 import 'package:quevault_app/models/auth_models.dart';
-import 'package:quevault_app/views/auth/home_screen.dart';
 import 'package:quevault_app/debug/storage_debug.dart';
 
 class SetupMasterPasswordScreen extends ConsumerStatefulWidget {

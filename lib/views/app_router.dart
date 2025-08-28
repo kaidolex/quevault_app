@@ -4,7 +4,7 @@ import '../viewmodels/auth_viewmodel.dart';
 import 'auth/onboarding_screen.dart';
 import 'auth/setup_master_password_screen.dart';
 import 'auth/login_screen.dart';
-import 'auth/home_screen.dart';
+import 'home/home_screen.dart';
 
 /// Main app router that determines which screen to show based on app state
 class AppRouter extends ConsumerWidget {
