@@ -78,6 +78,29 @@ class AuthViewModel extends StateNotifier<AuthState> {
     _checkInitialState();
   }
 
+  /// Force refresh of all state - useful for debugging or when app resumes
+  Future<void> forceRefreshState() async {
+    await _checkInitialState();
+  }
+
+  /// Debug method to print current biometric state
+  Future<void> debugBiometricState() async {
+    if (kDebugMode) {
+      final isBiometricAvailable = await _authRepository.isBiometricAvailable();
+      final isBiometricEnabled = await _authRepository.isBiometricEnabled();
+      final biometricType = await _authRepository.getPrimaryBiometricType();
+      final storageTest = await _authRepository.testBiometricStorage();
+
+      print('=== BIOMETRIC DEBUG STATE ===');
+      print('Available: $isBiometricAvailable');
+      print('Enabled: $isBiometricEnabled');
+      print('Type: $biometricType');
+      print('Storage Test: ${storageTest ? 'PASSED' : 'FAILED'}');
+      print('Current State - Available: ${state.isBiometricAvailable}, Enabled: ${state.isBiometricEnabled}, Type: ${state.biometricType}');
+      print('============================');
+    }
+  }
+
   /// Checks initial authentication state
   Future<void> _checkInitialState() async {
     state = state.loading();
@@ -89,6 +112,10 @@ class AuthViewModel extends StateNotifier<AuthState> {
       final isBiometricEnabled = await _authRepository.isBiometricEnabled();
       final biometricType = await _authRepository.getPrimaryBiometricType();
 
+      if (kDebugMode) {
+        print('AuthViewModel: Initial state check - isBiometricEnabled: $isBiometricEnabled, isBiometricAvailable: $isBiometricAvailable');
+      }
+
       state = state.copyWith(
         isLoading: false,
         isMasterPasswordSetup: isSetup,
@@ -98,6 +125,9 @@ class AuthViewModel extends StateNotifier<AuthState> {
         biometricType: biometricType,
       );
     } catch (e) {
+      if (kDebugMode) {
+        print('AuthViewModel: Error checking initial state: $e');
+      }
       state = state.error('Failed to check authentication state');
     }
   }
@@ -160,7 +190,15 @@ class AuthViewModel extends StateNotifier<AuthState> {
 
   /// Logs out the user
   void logout() {
-    state = state.copyWith(isAuthenticated: false, successMessage: 'Logged out successfully');
+    // Preserve biometric settings when logging out
+    state = state.copyWith(
+      isAuthenticated: false,
+      successMessage: 'Logged out successfully',
+      // Explicitly preserve biometric state
+      isBiometricAvailable: state.isBiometricAvailable,
+      isBiometricEnabled: state.isBiometricEnabled,
+      biometricType: state.biometricType,
+    );
   }
 
   /// Resets authentication (clears all data)
@@ -171,7 +209,18 @@ class AuthViewModel extends StateNotifier<AuthState> {
       final result = await _authRepository.resetAuth();
 
       if (result.success) {
-        state = const AuthState().success(message: result.message);
+        // Preserve biometric settings when resetting auth
+        final isBiometricAvailable = await _authRepository.isBiometricAvailable();
+        final isBiometricEnabled = await _authRepository.isBiometricEnabled();
+        final biometricType = await _authRepository.getPrimaryBiometricType();
+
+        state = const AuthState().copyWith(
+          isLoading: false,
+          successMessage: result.message,
+          isBiometricAvailable: isBiometricAvailable,
+          isBiometricEnabled: isBiometricEnabled,
+          biometricType: biometricType,
+        );
       } else {
         state = state.error(result.message ?? 'Failed to reset authentication');
       }
@@ -282,6 +331,9 @@ class AuthViewModel extends StateNotifier<AuthState> {
       state = state.copyWith(isBiometricAvailable: isBiometricAvailable, isBiometricEnabled: isBiometricEnabled, biometricType: biometricType);
     } catch (e) {
       // Silent error - don't show to user
+      if (kDebugMode) {
+        print('AuthViewModel: Error refreshing biometric status: $e');
+      }
     }
   }
 }

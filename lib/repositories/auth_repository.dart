@@ -160,6 +160,15 @@ class AuthRepository {
     }
   }
 
+  /// Test biometric storage functionality
+  Future<bool> testBiometricStorage() async {
+    try {
+      return await _biometricService.testBiometricStorage();
+    } catch (e) {
+      return false;
+    }
+  }
+
   /// Enables biometric authentication (requires master password verification)
   Future<AuthResult> enableBiometric(String masterPassword) async {
     try {

@@ -1,12 +1,9 @@
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter/foundation.dart';
+import '../core/configs/storage_config.dart';
 
 /// Service for managing onboarding state
 class OnboardingService {
-  static const _storage = FlutterSecureStorage(
-    aOptions: AndroidOptions(encryptedSharedPreferences: true),
-    iOptions: IOSOptions(accessibility: KeychainAccessibility.first_unlock_this_device),
-  );
+  static const _storage = StorageConfig.secureStorage;
 
   static const String _onboardingCompleteKey = 'onboarding_complete';
 

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:quevault_app/viewmodels/theme_viewmodel.dart';
 import 'package:quevault_app/viewmodels/auth_viewmodel.dart';
@@ -103,6 +104,17 @@ class SettingsScreen extends ConsumerWidget {
                       style: Theme.of(
                         context,
                       ).textTheme.bodyLarge?.copyWith(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6), fontStyle: FontStyle.italic),
+                    ),
+                  ],
+                  // Debug button (only in debug mode)
+                  if (kDebugMode) ...[
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: () {
+                        themeNotifier.debugThemeState();
+                        ref.read(authViewModelProvider.notifier).debugBiometricState();
+                      },
+                      child: const Text('Debug Storage'),
                     ),
                   ],
                 ],

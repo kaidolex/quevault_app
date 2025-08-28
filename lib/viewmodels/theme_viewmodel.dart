@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:flutter/foundation.dart';
+import '../core/configs/storage_config.dart';
 
 /// Theme mode state
 enum AppThemeMode { light, dark, system }
@@ -32,7 +33,7 @@ class ThemeState {
 /// Theme ViewModel using Riverpod StateNotifier
 class ThemeViewModel extends StateNotifier<ThemeState> {
   static const String _themeKey = 'app_theme_mode';
-  static const FlutterSecureStorage _storage = FlutterSecureStorage();
+  static const _storage = StorageConfig.secureStorage;
 
   ThemeViewModel() : super(const ThemeState()) {
     _loadTheme();
@@ -44,11 +45,25 @@ class ThemeViewModel extends StateNotifier<ThemeState> {
       state = state.copyWith(isLoading: true);
 
       final savedTheme = await _storage.read(key: _themeKey);
+      if (kDebugMode) {
+        print('ThemeViewModel: Loading theme from storage - saved value: "$savedTheme"');
+      }
+
       if (savedTheme != null) {
         final themeMode = AppThemeMode.values.firstWhere((mode) => mode.toString() == savedTheme, orElse: () => AppThemeMode.system);
         state = state.copyWith(themeMode: themeMode);
+        if (kDebugMode) {
+          print('ThemeViewModel: Theme loaded successfully - mode: $themeMode');
+        }
+      } else {
+        if (kDebugMode) {
+          print('ThemeViewModel: No saved theme found, using system default');
+        }
       }
     } catch (e) {
+      if (kDebugMode) {
+        print('ThemeViewModel: Error loading theme: $e');
+      }
       // If loading fails, use system default
       state = state.copyWith(themeMode: AppThemeMode.system);
     } finally {
@@ -62,7 +77,13 @@ class ThemeViewModel extends StateNotifier<ThemeState> {
 
     try {
       await _storage.write(key: _themeKey, value: themeMode.toString());
+      if (kDebugMode) {
+        print('ThemeViewModel: Theme saved to storage - mode: $themeMode');
+      }
     } catch (e) {
+      if (kDebugMode) {
+        print('ThemeViewModel: Error saving theme: $e');
+      }
       // Handle storage error silently
     }
   }
@@ -93,6 +114,56 @@ class ThemeViewModel extends StateNotifier<ThemeState> {
 
   /// Check if current mode is system
   bool get isSystemMode => state.themeMode == AppThemeMode.system;
+
+  /// Test theme storage functionality
+  Future<bool> testThemeStorage() async {
+    try {
+      const testKey = 'theme_test';
+      const testValue = 'test_theme_value';
+
+      // Write test value
+      await _storage.write(key: testKey, value: testValue);
+      if (kDebugMode) {
+        print('ThemeViewModel: Test value written to storage');
+      }
+
+      // Read test value
+      final readValue = await _storage.read(key: testKey);
+      if (kDebugMode) {
+        print('ThemeViewModel: Test value read from storage: "$readValue"');
+      }
+
+      // Clean up
+      await _storage.delete(key: testKey);
+
+      final success = readValue == testValue;
+      if (kDebugMode) {
+        print('ThemeViewModel: Storage test ${success ? 'PASSED' : 'FAILED'}');
+      }
+
+      return success;
+    } catch (e) {
+      if (kDebugMode) {
+        print('ThemeViewModel: Storage test failed with error: $e');
+      }
+      return false;
+    }
+  }
+
+  /// Debug method to print current theme state
+  Future<void> debugThemeState() async {
+    if (kDebugMode) {
+      final savedTheme = await _storage.read(key: _themeKey);
+      final storageTest = await testThemeStorage();
+
+      print('=== THEME DEBUG STATE ===');
+      print('Current Mode: ${state.themeMode}');
+      print('Saved Theme: "$savedTheme"');
+      print('Storage Test: ${storageTest ? 'PASSED' : 'FAILED'}');
+      print('Is Loading: ${state.isLoading}');
+      print('========================');
+    }
+  }
 }
 
 /// Provider for theme state

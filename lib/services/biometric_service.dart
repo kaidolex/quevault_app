@@ -1,11 +1,12 @@
 import 'package:local_auth/local_auth.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:flutter/foundation.dart';
+import '../core/configs/storage_config.dart';
 
 /// Service for handling biometric authentication
 class BiometricService {
   static const String _biometricEnabledKey = 'biometric_enabled';
-  static const FlutterSecureStorage _storage = FlutterSecureStorage();
+  static const _storage = StorageConfig.secureStorage;
   final LocalAuthentication _localAuth = LocalAuthentication();
 
   /// Check if biometric authentication is available on the device
@@ -78,8 +79,17 @@ class BiometricService {
   Future<bool> isBiometricEnabled() async {
     try {
       final value = await _storage.read(key: _biometricEnabledKey);
-      return value == 'true';
+      final isEnabled = value == 'true';
+
+      if (kDebugMode) {
+        print('BiometricService: isBiometricEnabled - stored value: "$value", result: $isEnabled');
+      }
+
+      return isEnabled;
     } catch (e) {
+      if (kDebugMode) {
+        print('BiometricService: Error checking biometric enabled state: $e');
+      }
       return false;
     }
   }
@@ -88,8 +98,14 @@ class BiometricService {
   Future<bool> enableBiometric() async {
     try {
       await _storage.write(key: _biometricEnabledKey, value: 'true');
+      if (kDebugMode) {
+        print('BiometricService: Biometric authentication enabled');
+      }
       return true;
     } catch (e) {
+      if (kDebugMode) {
+        print('BiometricService: Error enabling biometric: $e');
+      }
       return false;
     }
   }
@@ -98,8 +114,14 @@ class BiometricService {
   Future<bool> disableBiometric() async {
     try {
       await _storage.delete(key: _biometricEnabledKey);
+      if (kDebugMode) {
+        print('BiometricService: Biometric authentication disabled');
+      }
       return true;
     } catch (e) {
+      if (kDebugMode) {
+        print('BiometricService: Error disabling biometric: $e');
+      }
       return false;
     }
   }
@@ -125,6 +147,41 @@ class BiometricService {
       return getBiometricTypeName(availableBiometrics);
     } catch (e) {
       return 'None';
+    }
+  }
+
+  /// Test storage read/write functionality for biometric settings
+  Future<bool> testBiometricStorage() async {
+    try {
+      const testKey = 'biometric_test';
+      const testValue = 'test_biometric_value';
+
+      // Write test value
+      await _storage.write(key: testKey, value: testValue);
+      if (kDebugMode) {
+        print('BiometricService: Test value written to storage');
+      }
+
+      // Read test value
+      final readValue = await _storage.read(key: testKey);
+      if (kDebugMode) {
+        print('BiometricService: Test value read from storage: "$readValue"');
+      }
+
+      // Clean up
+      await _storage.delete(key: testKey);
+
+      final success = readValue == testValue;
+      if (kDebugMode) {
+        print('BiometricService: Storage test ${success ? 'PASSED' : 'FAILED'}');
+      }
+
+      return success;
+    } catch (e) {
+      if (kDebugMode) {
+        print('BiometricService: Storage test failed with error: $e');
+      }
+      return false;
     }
   }
 

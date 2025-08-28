@@ -1,15 +1,12 @@
 import 'dart:convert';
 import 'dart:math';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
+import '../core/configs/storage_config.dart';
 
 /// Service for securely storing sensitive data using Flutter Secure Storage
 class SecureStorageService {
-  static const _storage = FlutterSecureStorage(
-    aOptions: AndroidOptions(encryptedSharedPreferences: true, sharedPreferencesName: 'quevault_secure_prefs'),
-    iOptions: IOSOptions(accessibility: KeychainAccessibility.first_unlock_this_device),
-  );
+  static const _storage = StorageConfig.secureStorage;
 
   // Storage keys
   static const String _masterPasswordHashKey = 'master_password_hash';

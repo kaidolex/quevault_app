@@ -17,6 +17,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   bool _isPasswordVisible = false;
 
   @override
+  void initState() {
+    super.initState();
+    // Refresh biometric status when login screen is displayed
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(authViewModelProvider.notifier).refreshBiometricStatus();
+      // Debug: Print biometric state
+      ref.read(authViewModelProvider.notifier).debugBiometricState();
+    });
+  }
+
+  @override
   void dispose() {
     _passwordController.dispose();
     super.dispose();
