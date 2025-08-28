@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../models/auth_models.dart';
 import '../repositories/auth_repository.dart';
+import '../services/onboarding_service.dart';
 
 /// Authentication state
 @immutable
@@ -9,16 +10,32 @@ class AuthState {
   final bool isLoading;
   final bool isAuthenticated;
   final bool isMasterPasswordSetup;
+  final bool isOnboardingComplete;
   final String? errorMessage;
   final String? successMessage;
 
-  const AuthState({this.isLoading = false, this.isAuthenticated = false, this.isMasterPasswordSetup = false, this.errorMessage, this.successMessage});
+  const AuthState({
+    this.isLoading = false,
+    this.isAuthenticated = false,
+    this.isMasterPasswordSetup = false,
+    this.isOnboardingComplete = false,
+    this.errorMessage,
+    this.successMessage,
+  });
 
-  AuthState copyWith({bool? isLoading, bool? isAuthenticated, bool? isMasterPasswordSetup, String? errorMessage, String? successMessage}) {
+  AuthState copyWith({
+    bool? isLoading,
+    bool? isAuthenticated,
+    bool? isMasterPasswordSetup,
+    bool? isOnboardingComplete,
+    String? errorMessage,
+    String? successMessage,
+  }) {
     return AuthState(
       isLoading: isLoading ?? this.isLoading,
       isAuthenticated: isAuthenticated ?? this.isAuthenticated,
       isMasterPasswordSetup: isMasterPasswordSetup ?? this.isMasterPasswordSetup,
+      isOnboardingComplete: isOnboardingComplete ?? this.isOnboardingComplete,
       errorMessage: errorMessage,
       successMessage: successMessage,
     );
@@ -43,8 +60,9 @@ class AuthState {
 /// Auth ViewModel using Riverpod StateNotifier
 class AuthViewModel extends StateNotifier<AuthState> {
   final AuthRepository _authRepository;
+  final OnboardingService _onboardingService;
 
-  AuthViewModel(this._authRepository) : super(const AuthState()) {
+  AuthViewModel(this._authRepository, this._onboardingService) : super(const AuthState()) {
     _checkInitialState();
   }
 
@@ -54,7 +72,9 @@ class AuthViewModel extends StateNotifier<AuthState> {
 
     try {
       final isSetup = await _authRepository.isMasterPasswordSetup();
-      state = state.copyWith(isLoading: false, isMasterPasswordSetup: isSetup);
+      final isOnboardingComplete = await _onboardingService.isOnboardingComplete();
+
+      state = state.copyWith(isLoading: false, isMasterPasswordSetup: isSetup, isOnboardingComplete: isOnboardingComplete);
     } catch (e) {
       state = state.error('Failed to check authentication state');
     }
@@ -154,6 +174,26 @@ class AuthViewModel extends StateNotifier<AuthState> {
     final request = MasterPasswordSetupRequest(password: password, confirmPassword: confirmPassword);
     return request.validate();
   }
+
+  /// Completes onboarding process
+  Future<void> completeOnboarding() async {
+    try {
+      await _onboardingService.completeOnboarding();
+      state = state.copyWith(isOnboardingComplete: true);
+    } catch (e) {
+      state = state.error('Failed to complete onboarding');
+    }
+  }
+
+  /// Resets onboarding (for testing/debugging)
+  Future<void> resetOnboarding() async {
+    try {
+      await _onboardingService.resetOnboarding();
+      state = state.copyWith(isOnboardingComplete: false);
+    } catch (e) {
+      state = state.error('Failed to reset onboarding');
+    }
+  }
 }
 
 // Providers
@@ -161,9 +201,14 @@ final authRepositoryProvider = Provider<AuthRepository>((ref) {
   return AuthRepository();
 });
 
+final onboardingServiceProvider = Provider<OnboardingService>((ref) {
+  return OnboardingService();
+});
+
 final authViewModelProvider = StateNotifierProvider<AuthViewModel, AuthState>((ref) {
   final repository = ref.watch(authRepositoryProvider);
-  return AuthViewModel(repository);
+  final onboardingService = ref.watch(onboardingServiceProvider);
+  return AuthViewModel(repository, onboardingService);
 });
 
 // Helper providers for specific state access
@@ -185,4 +230,8 @@ final authErrorProvider = Provider<String?>((ref) {
 
 final authSuccessProvider = Provider<String?>((ref) {
   return ref.watch(authViewModelProvider).successMessage;
+});
+
+final isOnboardingCompleteProvider = Provider<bool>((ref) {
+  return ref.watch(authViewModelProvider).isOnboardingComplete;
 });

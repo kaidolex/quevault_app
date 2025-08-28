@@ -1,11 +1,13 @@
 import 'dart:convert';
+import 'dart:math';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:crypto/crypto.dart';
+import 'package:flutter/foundation.dart';
 
 /// Service for securely storing sensitive data using Flutter Secure Storage
 class SecureStorageService {
   static const _storage = FlutterSecureStorage(
-    aOptions: AndroidOptions(encryptedSharedPreferences: true),
+    aOptions: AndroidOptions(encryptedSharedPreferences: true, sharedPreferencesName: 'quevault_secure_prefs'),
     iOptions: IOSOptions(accessibility: KeychainAccessibility.first_unlock_this_device),
   );
 
@@ -17,19 +19,43 @@ class SecureStorageService {
   /// Stores the master password securely by hashing it with a salt
   Future<bool> storeMasterPassword(String password) async {
     try {
+      if (kDebugMode) {
+        print('SecureStorageService: Starting to store master password');
+      }
+
       // Generate a random salt
       final salt = _generateSalt();
+      if (kDebugMode) {
+        print('SecureStorageService: Generated salt');
+      }
 
       // Hash the password with the salt
       final hashedPassword = _hashPassword(password, salt);
+      if (kDebugMode) {
+        print('SecureStorageService: Hashed password');
+      }
 
       // Store both hash and salt
       await _storage.write(key: _masterPasswordHashKey, value: hashedPassword);
+      if (kDebugMode) {
+        print('SecureStorageService: Stored password hash');
+      }
+
       await _storage.write(key: _masterPasswordSaltKey, value: salt);
+      if (kDebugMode) {
+        print('SecureStorageService: Stored salt');
+      }
+
       await _storage.write(key: _isSetupCompleteKey, value: 'true');
+      if (kDebugMode) {
+        print('SecureStorageService: Stored setup complete flag');
+      }
 
       return true;
     } catch (e) {
+      if (kDebugMode) {
+        print('SecureStorageService: Error storing master password: $e');
+      }
       return false;
     }
   }
@@ -123,7 +149,8 @@ class SecureStorageService {
 
   /// Generates a random salt for password hashing
   String _generateSalt() {
-    final bytes = List<int>.generate(32, (i) => DateTime.now().millisecondsSinceEpoch.hashCode + i);
+    final random = Random.secure();
+    final bytes = List<int>.generate(32, (i) => random.nextInt(256));
     return base64Encode(bytes);
   }
 
@@ -138,9 +165,19 @@ class SecureStorageService {
   /// Checks if secure storage is available
   Future<bool> isStorageAvailable() async {
     try {
-      await _storage.containsKey(key: 'test');
-      return true;
+      // Try to write and read a test value
+      const testKey = 'storage_test';
+      const testValue = 'test_value';
+
+      await _storage.write(key: testKey, value: testValue);
+      final readValue = await _storage.read(key: testKey);
+      await _storage.delete(key: testKey);
+
+      return readValue == testValue;
     } catch (e) {
+      if (kDebugMode) {
+        print('SecureStorageService: Storage availability test failed: $e');
+      }
       return false;
     }
   }

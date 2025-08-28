@@ -19,7 +19,7 @@ class HomeScreen extends ConsumerWidget {
             icon: const Icon(Icons.logout),
             onPressed: () {
               ref.read(authViewModelProvider.notifier).logout();
-              Navigator.of(context).pushAndRemoveUntil(MaterialPageRoute(builder: (context) => const OnboardingScreen()), (route) => false);
+              // Navigation will be handled automatically by AppRouter
             },
           ),
         ],

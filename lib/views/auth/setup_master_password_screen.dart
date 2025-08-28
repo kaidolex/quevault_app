@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:quevault_app/core/constants/app_spacing.dart';
 import 'package:quevault_app/viewmodels/auth_viewmodel.dart';
 import 'package:quevault_app/models/auth_models.dart';
 import 'package:quevault_app/views/auth/home_screen.dart';
+import 'package:quevault_app/debug/storage_debug.dart';
 
 class SetupMasterPasswordScreen extends ConsumerStatefulWidget {
   const SetupMasterPasswordScreen({super.key});
@@ -90,10 +92,7 @@ class _SetupMasterPasswordScreenState extends ConsumerState<SetupMasterPasswordS
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(next.errorMessage!), backgroundColor: Colors.red));
       } else if (next.successMessage != null) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(next.successMessage!), backgroundColor: Colors.green));
-        // Navigate to home screen after successful setup
-        if (next.isMasterPasswordSetup && next.isAuthenticated) {
-          Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (context) => const HomeScreen()));
-        }
+        // Navigation will be handled automatically by AppRouter
       }
     });
 
@@ -259,6 +258,49 @@ class _SetupMasterPasswordScreenState extends ConsumerState<SetupMasterPasswordS
                     ),
 
                     AppSpacing.verticalSpacingMD,
+
+                    // Debug section (only in debug mode)
+                    if (kDebugMode) ...[
+                      ShadCard(
+                        child: Padding(
+                          padding: AppSpacing.paddingMD,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Text(
+                                'Debug Tools',
+                                style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600, color: Colors.orange),
+                              ),
+                              AppSpacing.verticalSpacingSM,
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: ShadButton(
+                                      onPressed: () async {
+                                        await StorageDebug.testStorageSetup();
+                                      },
+                                      child: const Text('Test Storage'),
+                                    ),
+                                  ),
+                                  AppSpacing.horizontalSpacingSM,
+                                  Expanded(
+                                    child: ShadButton(
+                                      onPressed: () async {
+                                        await StorageDebug.clearAllData();
+                                        await ref.read(authViewModelProvider.notifier).resetOnboarding();
+                                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Debug: All data cleared')));
+                                      },
+                                      child: const Text('Reset App'),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      AppSpacing.verticalSpacingMD,
+                    ],
 
                     // Security Tips Card - Using ShadCard
                     ShadCard(

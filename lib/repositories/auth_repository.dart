@@ -16,6 +16,15 @@ class AuthRepository {
         return validation;
       }
 
+      // Check if secure storage is available
+      final isStorageAvailable = await _secureStorageService.isStorageAvailable();
+      if (!isStorageAvailable) {
+        return AuthResult.failure(
+          message: 'Secure storage is not available on this device. Please check your device settings.',
+          error: AuthError.storageError,
+        );
+      }
+
       // Check if master password is already set up
       final isAlreadySetup = await _secureStorageService.isMasterPasswordSetup();
       if (isAlreadySetup) {

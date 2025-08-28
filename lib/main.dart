@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:quevault_app/views/auth/onboarding_screen.dart';
+import 'package:quevault_app/views/app_router.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 
 void main() {
@@ -19,7 +19,7 @@ class MyApp extends StatelessWidget {
             title: 'QueVault',
             debugShowCheckedModeBanner: false,
             theme: Theme.of(context),
-            home: const OnboardingScreen(),
+            home: const AppRouter(),
             builder: (context, child) {
               return ShadAppBuilder(child: child!);
             },

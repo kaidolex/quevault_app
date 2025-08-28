@@ -19,25 +19,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   @override
   void initState() {
     super.initState();
-    // Check if we should show onboarding or navigate directly
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _checkAuthState();
-    });
-  }
-
-  void _checkAuthState() {
-    final authState = ref.read(authViewModelProvider);
-    if (!authState.isLoading) {
-      if (authState.isMasterPasswordSetup) {
-        // Master password is already setup, go to login
-        Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (context) => const LoginScreen()));
-      }
-      // If master password is not setup, stay on onboarding
-    }
   }
 
   void _onIntroEnd(context) {
-    Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (context) => const SetupMasterPasswordScreen()));
+    // Mark onboarding as complete
+    ref.read(authViewModelProvider.notifier).completeOnboarding();
+    // Navigation will be handled automatically by AppRouter
   }
 
   Widget _buildPage({required String title, required String body, required IconData icon, required Color iconColor}) {
@@ -83,13 +70,6 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final authState = ref.watch(authViewModelProvider);
-
-    // Show loading if auth state is still being determined
-    if (authState.isLoading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
-    }
-
     return IntroductionScreen(
       key: introKey,
       globalBackgroundColor: Theme.of(context).scaffoldBackgroundColor,
