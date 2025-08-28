@@ -85,6 +85,9 @@ class _SetupMasterPasswordScreenState extends State<SetupMasterPasswordScreen> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('Master password has been set successfully!'), backgroundColor: Colors.green));
+    } else {
+      // Show error message if validation fails
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please fix the errors in the form'), backgroundColor: Colors.red));
     }
   }
 
@@ -94,7 +97,7 @@ class _SetupMasterPasswordScreenState extends State<SetupMasterPasswordScreen> {
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: AppSpacing.screenPadding,
+            padding: AppSpacing.paddingMD,
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: AppSpacing.maxContentWidth),
               child: Form(
@@ -106,14 +109,14 @@ class _SetupMasterPasswordScreenState extends State<SetupMasterPasswordScreen> {
                     // Header Section
                     Column(
                       children: [
-                        Icon(Icons.security, size: AppSpacing.xxxl, color: Theme.of(context).colorScheme.primary),
-                        AppSpacing.verticalSpacingLG,
+                        Icon(Icons.security, size: AppSpacing.xxl, color: Theme.of(context).colorScheme.primary),
+                        AppSpacing.verticalSpacingMD,
                         Text(
                           'Setup Master Password',
                           style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold),
                           textAlign: TextAlign.center,
                         ),
-                        AppSpacing.verticalSpacingSM,
+                        AppSpacing.verticalSpacingXS,
                         Text(
                           'Create a strong master password to protect your vault. This password will be used to encrypt and decrypt all your stored data.',
                           style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
@@ -122,12 +125,12 @@ class _SetupMasterPasswordScreenState extends State<SetupMasterPasswordScreen> {
                       ],
                     ),
 
-                    AppSpacing.verticalSpacingXXL,
+                    AppSpacing.verticalSpacingLG,
 
                     // Form Section - Using ShadCard
                     ShadCard(
                       child: Padding(
-                        padding: AppSpacing.cardPadding,
+                        padding: AppSpacing.paddingMD,
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
@@ -189,14 +192,14 @@ class _SetupMasterPasswordScreenState extends State<SetupMasterPasswordScreen> {
                                   AppSpacing.verticalSpacingXS,
                                   LinearProgressIndicator(
                                     value: _getStrengthProgress(_getPasswordStrength(_passwordController.text)),
-                                    backgroundColor: Colors.grey.withOpacity(0.3),
+                                    backgroundColor: Colors.grey.withValues(alpha: 0.3),
                                     valueColor: AlwaysStoppedAnimation<Color>(_getStrengthColor(_getPasswordStrength(_passwordController.text))),
                                   ),
                                 ],
                               ),
                             ],
 
-                            AppSpacing.verticalSpacingLG,
+                            AppSpacing.verticalSpacingMD,
 
                             // Confirm Password Field
                             TextFormField(
@@ -230,7 +233,7 @@ class _SetupMasterPasswordScreenState extends State<SetupMasterPasswordScreen> {
                               },
                             ),
 
-                            AppSpacing.verticalSpacingXL,
+                            AppSpacing.verticalSpacingLG,
 
                             // Submit Button - Using ShadButton
                             ShadButton(onPressed: _handleSubmit, child: const Text('Create Master Password')),
@@ -239,12 +242,12 @@ class _SetupMasterPasswordScreenState extends State<SetupMasterPasswordScreen> {
                       ),
                     ),
 
-                    AppSpacing.verticalSpacingLG,
+                    AppSpacing.verticalSpacingMD,
 
                     // Security Tips Card - Using ShadCard
                     ShadCard(
                       child: Padding(
-                        padding: AppSpacing.paddingLG,
+                        padding: AppSpacing.paddingMD,
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -255,7 +258,7 @@ class _SetupMasterPasswordScreenState extends State<SetupMasterPasswordScreen> {
                                 Text('Security Tips', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
                               ],
                             ),
-                            AppSpacing.verticalSpacingMD,
+                            AppSpacing.verticalSpacingSM,
                             ...[
                               'Use at least 12 characters for better security',
                               'Include uppercase and lowercase letters',

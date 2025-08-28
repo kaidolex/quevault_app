@@ -18,6 +18,7 @@ dependencies:
   clipboard: ^2.0.2
   hooks_riverpod: ^2.6.1
   shadcn_ui: ^0.29.0
+  flutter_secure_storage: ^9.2.2
 
 dev_dependencies:
   flutter_test:

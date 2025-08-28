@@ -13,7 +13,19 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ProviderScope(
-      child: ShadApp(title: 'QueVault', debugShowCheckedModeBanner: false, home: const SetupMasterPasswordScreen()),
+      child: ShadApp.custom(
+        appBuilder: (context) {
+          return MaterialApp(
+            title: 'QueVault',
+            debugShowCheckedModeBanner: false,
+            theme: Theme.of(context),
+            home: const SetupMasterPasswordScreen(),
+            builder: (context, child) {
+              return ShadAppBuilder(child: child!);
+            },
+          );
+        },
+      ),
     );
   }
 }
