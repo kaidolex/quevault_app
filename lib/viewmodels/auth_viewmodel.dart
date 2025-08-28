@@ -11,6 +11,9 @@ class AuthState {
   final bool isAuthenticated;
   final bool isMasterPasswordSetup;
   final bool isOnboardingComplete;
+  final bool isBiometricAvailable;
+  final bool isBiometricEnabled;
+  final String biometricType;
   final String? errorMessage;
   final String? successMessage;
 
@@ -19,6 +22,9 @@ class AuthState {
     this.isAuthenticated = false,
     this.isMasterPasswordSetup = false,
     this.isOnboardingComplete = false,
+    this.isBiometricAvailable = false,
+    this.isBiometricEnabled = false,
+    this.biometricType = 'None',
     this.errorMessage,
     this.successMessage,
   });
@@ -28,6 +34,9 @@ class AuthState {
     bool? isAuthenticated,
     bool? isMasterPasswordSetup,
     bool? isOnboardingComplete,
+    bool? isBiometricAvailable,
+    bool? isBiometricEnabled,
+    String? biometricType,
     String? errorMessage,
     String? successMessage,
   }) {
@@ -36,6 +45,9 @@ class AuthState {
       isAuthenticated: isAuthenticated ?? this.isAuthenticated,
       isMasterPasswordSetup: isMasterPasswordSetup ?? this.isMasterPasswordSetup,
       isOnboardingComplete: isOnboardingComplete ?? this.isOnboardingComplete,
+      isBiometricAvailable: isBiometricAvailable ?? this.isBiometricAvailable,
+      isBiometricEnabled: isBiometricEnabled ?? this.isBiometricEnabled,
+      biometricType: biometricType ?? this.biometricType,
       errorMessage: errorMessage,
       successMessage: successMessage,
     );
@@ -73,8 +85,18 @@ class AuthViewModel extends StateNotifier<AuthState> {
     try {
       final isSetup = await _authRepository.isMasterPasswordSetup();
       final isOnboardingComplete = await _onboardingService.isOnboardingComplete();
+      final isBiometricAvailable = await _authRepository.isBiometricAvailable();
+      final isBiometricEnabled = await _authRepository.isBiometricEnabled();
+      final biometricType = await _authRepository.getPrimaryBiometricType();
 
-      state = state.copyWith(isLoading: false, isMasterPasswordSetup: isSetup, isOnboardingComplete: isOnboardingComplete);
+      state = state.copyWith(
+        isLoading: false,
+        isMasterPasswordSetup: isSetup,
+        isOnboardingComplete: isOnboardingComplete,
+        isBiometricAvailable: isBiometricAvailable,
+        isBiometricEnabled: isBiometricEnabled,
+        biometricType: biometricType,
+      );
     } catch (e) {
       state = state.error('Failed to check authentication state');
     }
@@ -192,6 +214,74 @@ class AuthViewModel extends StateNotifier<AuthState> {
       state = state.copyWith(isOnboardingComplete: false);
     } catch (e) {
       state = state.error('Failed to reset onboarding');
+    }
+  }
+
+  // Biometric Authentication Methods
+
+  /// Enables biometric authentication
+  Future<void> enableBiometric(String masterPassword) async {
+    state = state.loading();
+
+    try {
+      final result = await _authRepository.enableBiometric(masterPassword);
+
+      if (result.success) {
+        // Refresh biometric status
+        final isBiometricEnabled = await _authRepository.isBiometricEnabled();
+        state = state.copyWith(isLoading: false, isBiometricEnabled: isBiometricEnabled, successMessage: result.message);
+      } else {
+        state = state.error(result.message ?? 'Failed to enable biometric authentication');
+      }
+    } catch (e) {
+      state = state.error('An unexpected error occurred');
+    }
+  }
+
+  /// Disables biometric authentication
+  Future<void> disableBiometric() async {
+    state = state.loading();
+
+    try {
+      final result = await _authRepository.disableBiometric();
+
+      if (result.success) {
+        state = state.copyWith(isLoading: false, isBiometricEnabled: false, successMessage: result.message);
+      } else {
+        state = state.error(result.message ?? 'Failed to disable biometric authentication');
+      }
+    } catch (e) {
+      state = state.error('An unexpected error occurred');
+    }
+  }
+
+  /// Authenticates using biometric
+  Future<void> loginWithBiometric() async {
+    state = state.loading();
+
+    try {
+      final result = await _authRepository.loginWithBiometric();
+
+      if (result.success) {
+        state = state.copyWith(isLoading: false, isAuthenticated: true, successMessage: result.message);
+      } else {
+        state = state.error(result.message ?? 'Biometric authentication failed');
+      }
+    } catch (e) {
+      state = state.error('An unexpected error occurred');
+    }
+  }
+
+  /// Refreshes biometric status
+  Future<void> refreshBiometricStatus() async {
+    try {
+      final isBiometricAvailable = await _authRepository.isBiometricAvailable();
+      final isBiometricEnabled = await _authRepository.isBiometricEnabled();
+      final biometricType = await _authRepository.getPrimaryBiometricType();
+
+      state = state.copyWith(isBiometricAvailable: isBiometricAvailable, isBiometricEnabled: isBiometricEnabled, biometricType: biometricType);
+    } catch (e) {
+      // Silent error - don't show to user
     }
   }
 }

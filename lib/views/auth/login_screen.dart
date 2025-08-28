@@ -3,7 +3,6 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 import 'package:quevault_app/core/constants/app_spacing.dart';
 import 'package:quevault_app/viewmodels/auth_viewmodel.dart';
-import 'package:quevault_app/views/home/home_screen.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -27,6 +26,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     if (_formKey.currentState?.validate() ?? false) {
       await ref.read(authViewModelProvider.notifier).login(_passwordController.text);
     }
+  }
+
+  Future<void> _handleBiometricLogin() async {
+    await ref.read(authViewModelProvider.notifier).loginWithBiometric();
   }
 
   @override
@@ -127,6 +130,33 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                     )
                                   : const Text('Unlock Vault'),
                             ),
+
+                            // Biometric Login Button
+                            if (authState.isBiometricAvailable && authState.isBiometricEnabled) ...[
+                              AppSpacing.verticalSpacingMD,
+                              Row(
+                                children: [
+                                  Expanded(child: Divider(color: Colors.grey[300])),
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                                    child: Text('OR', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey[600])),
+                                  ),
+                                  Expanded(child: Divider(color: Colors.grey[300])),
+                                ],
+                              ),
+                              AppSpacing.verticalSpacingMD,
+                              ShadButton.outline(
+                                onPressed: authState.isLoading ? null : _handleBiometricLogin,
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(Icons.fingerprint, size: 20),
+                                    const SizedBox(width: 8),
+                                    Text('Unlock with ${authState.biometricType}'),
+                                  ],
+                                ),
+                              ),
+                            ],
                           ],
                         ),
                       ),

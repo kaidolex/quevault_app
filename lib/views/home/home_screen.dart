@@ -3,7 +3,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 import 'package:quevault_app/core/constants/app_spacing.dart';
 import 'package:quevault_app/viewmodels/auth_viewmodel.dart';
-import 'package:quevault_app/views/auth/onboarding_screen.dart';
+import 'package:quevault_app/views/settings/settings_screen.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -15,6 +15,12 @@ class HomeScreen extends ConsumerWidget {
         title: const Text('QueVault'),
         centerTitle: true,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.settings),
+            onPressed: () {
+              Navigator.of(context).push(MaterialPageRoute(builder: (context) => const SettingsScreen()));
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () {

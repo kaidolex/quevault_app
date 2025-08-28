@@ -1,11 +1,15 @@
 import '../models/auth_models.dart';
 import '../services/secure_storage_service.dart';
+import '../services/biometric_service.dart';
 
 /// Repository for handling authentication operations
 class AuthRepository {
   final SecureStorageService _secureStorageService;
+  final BiometricService _biometricService;
 
-  AuthRepository({SecureStorageService? secureStorageService}) : _secureStorageService = secureStorageService ?? SecureStorageService();
+  AuthRepository({SecureStorageService? secureStorageService, BiometricService? biometricService})
+    : _secureStorageService = secureStorageService ?? SecureStorageService(),
+      _biometricService = biometricService ?? BiometricService();
 
   /// Sets up the master password for the first time
   Future<AuthResult> setupMasterPassword(MasterPasswordSetupRequest request) async {
@@ -124,6 +128,113 @@ class AuthRepository {
       return await _secureStorageService.isStorageAvailable();
     } catch (e) {
       return false;
+    }
+  }
+
+  // Biometric Authentication Methods
+
+  /// Checks if biometric authentication is available
+  Future<bool> isBiometricAvailable() async {
+    try {
+      return await _biometricService.isBiometricAvailable();
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /// Checks if biometric authentication is enabled
+  Future<bool> isBiometricEnabled() async {
+    try {
+      return await _biometricService.isBiometricEnabled();
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /// Gets the primary biometric type
+  Future<String> getPrimaryBiometricType() async {
+    try {
+      return await _biometricService.getPrimaryBiometricType();
+    } catch (e) {
+      return 'None';
+    }
+  }
+
+  /// Enables biometric authentication (requires master password verification)
+  Future<AuthResult> enableBiometric(String masterPassword) async {
+    try {
+      // Check if master password is correct first
+      final isPasswordValid = await _secureStorageService.verifyMasterPassword(masterPassword);
+      if (!isPasswordValid) {
+        return AuthResult.failure(message: 'Invalid master password', error: AuthError.invalidPassword);
+      }
+
+      // Setup biometric authentication
+      final success = await _biometricService.setupBiometric(
+        masterPassword: masterPassword,
+        verifyMasterPassword: _secureStorageService.verifyMasterPassword,
+      );
+
+      if (success) {
+        return AuthResult.success(message: 'Biometric authentication enabled successfully');
+      } else {
+        return AuthResult.failure(message: 'Failed to enable biometric authentication', error: AuthError.unknown);
+      }
+    } catch (e) {
+      return AuthResult.failure(
+        message: e.toString().contains('Exception: ')
+            ? e.toString().replaceFirst('Exception: ', '')
+            : 'Failed to enable biometric authentication: ${e.toString()}',
+        error: AuthError.unknown,
+      );
+    }
+  }
+
+  /// Disables biometric authentication
+  Future<AuthResult> disableBiometric() async {
+    try {
+      final success = await _biometricService.disableBiometric();
+
+      if (success) {
+        return AuthResult.success(message: 'Biometric authentication disabled');
+      } else {
+        return AuthResult.failure(message: 'Failed to disable biometric authentication', error: AuthError.unknown);
+      }
+    } catch (e) {
+      return AuthResult.failure(message: 'An unexpected error occurred: ${e.toString()}', error: AuthError.unknown);
+    }
+  }
+
+  /// Authenticates using biometric
+  Future<AuthResult> loginWithBiometric() async {
+    try {
+      // Check if biometric is enabled
+      final isEnabled = await _biometricService.isBiometricEnabled();
+      if (!isEnabled) {
+        return AuthResult.failure(message: 'Biometric authentication is not enabled', error: AuthError.unknown);
+      }
+
+      // Check if master password is set up
+      final isSetup = await _secureStorageService.isMasterPasswordSetup();
+      if (!isSetup) {
+        return AuthResult.failure(message: 'Master password is not set up', error: AuthError.unknown);
+      }
+
+      // Authenticate using biometric
+      final success = await _biometricService.authenticateWithBiometrics(localizedReason: 'Unlock your QueVault with your fingerprint');
+
+      if (success) {
+        return AuthResult.success(message: 'Biometric authentication successful');
+      } else {
+        return AuthResult.failure(message: 'Biometric authentication failed', error: AuthError.unknown);
+      }
+    } catch (e) {
+      return AuthResult.failure(
+        message: e.toString().contains('Exception: ')
+            ? e.toString().replaceFirst('Exception: ', '')
+            : 'Biometric authentication failed: ${e.toString()}',
+        error: AuthError.unknown,
+      );
     }
   }
 }
