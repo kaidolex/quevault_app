@@ -1,10 +1,168 @@
 import 'package:flutter/material.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:shadcn_ui/shadcn_ui.dart';
+import 'package:quevault_app/core/constants/app_spacing.dart';
+import 'package:quevault_app/viewmodels/auth_viewmodel.dart';
+import 'package:quevault_app/views/auth/home_screen.dart';
 
-class LoginScreen extends StatelessWidget {
+class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
   @override
+  ConsumerState<LoginScreen> createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends ConsumerState<LoginScreen> {
+  final _formKey = GlobalKey<FormState>();
+  final _passwordController = TextEditingController();
+  bool _isPasswordVisible = false;
+
+  @override
+  void dispose() {
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _handleLogin() async {
+    if (_formKey.currentState?.validate() ?? false) {
+      await ref.read(authViewModelProvider.notifier).login(_passwordController.text);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return const Scaffold(body: Center(child: Text('Login')));
+    final authState = ref.watch(authViewModelProvider);
+
+    // Listen to state changes for navigation
+    ref.listen<AuthState>(authViewModelProvider, (previous, next) {
+      if (next.errorMessage != null) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(next.errorMessage!), backgroundColor: Colors.red));
+      } else if (next.isAuthenticated) {
+        Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (context) => const HomeScreen()));
+      }
+    });
+
+    return Scaffold(
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: AppSpacing.paddingMD,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: AppSpacing.maxContentWidth),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Header Section
+                    Column(
+                      children: [
+                        Icon(Icons.lock_rounded, size: AppSpacing.xxl, color: Theme.of(context).colorScheme.primary),
+                        AppSpacing.verticalSpacingMD,
+                        Text(
+                          'Welcome Back',
+                          style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold),
+                          textAlign: TextAlign.center,
+                        ),
+                        AppSpacing.verticalSpacingXS,
+                        Text(
+                          'Enter your master password to access your vault',
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+
+                    AppSpacing.verticalSpacingLG,
+
+                    // Login Form Card
+                    ShadCard(
+                      child: Padding(
+                        padding: AppSpacing.paddingMD,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            // Master Password Field
+                            TextFormField(
+                              controller: _passwordController,
+                              obscureText: !_isPasswordVisible,
+                              decoration: InputDecoration(
+                                labelText: 'Master Password',
+                                hintText: 'Enter your master password',
+                                prefixIcon: const Icon(Icons.key),
+                                suffixIcon: IconButton(
+                                  icon: Icon(_isPasswordVisible ? Icons.visibility_off : Icons.visibility),
+                                  onPressed: () {
+                                    setState(() {
+                                      _isPasswordVisible = !_isPasswordVisible;
+                                    });
+                                  },
+                                ),
+                                border: const OutlineInputBorder(),
+                              ),
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return 'Master password is required';
+                                }
+                                return null;
+                              },
+                              onFieldSubmitted: (_) => _handleLogin(),
+                            ),
+
+                            AppSpacing.verticalSpacingLG,
+
+                            // Login Button
+                            ShadButton(
+                              onPressed: authState.isLoading ? null : _handleLogin,
+                              child: authState.isLoading
+                                  ? const Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)),
+                                        SizedBox(width: 8),
+                                        Text('Unlocking...'),
+                                      ],
+                                    )
+                                  : const Text('Unlock Vault'),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    AppSpacing.verticalSpacingMD,
+
+                    // Security Info Card
+                    ShadCard(
+                      child: Padding(
+                        padding: AppSpacing.paddingMD,
+                        child: Column(
+                          children: [
+                            Row(
+                              children: [
+                                const Icon(Icons.info_outline, size: 20),
+                                AppSpacing.horizontalSpacingSM,
+                                Text('Security Notice', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+                              ],
+                            ),
+                            AppSpacing.verticalSpacingSM,
+                            Text(
+                              'Your master password is never stored on this device. It\'s used to decrypt your vault locally.',
+                              style: Theme.of(context).textTheme.bodySmall,
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
