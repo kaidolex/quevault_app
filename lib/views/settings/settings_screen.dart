@@ -14,114 +14,41 @@ class SettingsScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Settings'), centerTitle: true),
-      body: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Dark Mode Setting
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(20.0),
-                child: Row(
-                  children: [
-                    Icon(themeNotifier.isDarkMode ? Icons.dark_mode : Icons.light_mode, size: 28, color: Theme.of(context).colorScheme.primary),
-                    const SizedBox(width: 20),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Dark Mode', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600)),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Toggle between light and dark themes',
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7)),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Switch(value: themeNotifier.isDarkMode, onChanged: (_) => themeNotifier.toggleTheme()),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 24),
+      body: ListView(
+        children: [
+          // Dark Mode Setting
+          ListTile(
+            leading: Icon(themeNotifier.isDarkMode ? Icons.dark_mode : Icons.light_mode, color: Theme.of(context).colorScheme.primary),
+            title: const Text('Dark Mode'),
+            trailing: Switch(value: themeNotifier.isDarkMode, onChanged: (_) => themeNotifier.toggleTheme()),
+          ),
 
-            // Biometric Authentication Setting
-            if (authState.isBiometricAvailable)
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(20.0),
-                  child: Row(
-                    children: [
-                      Icon(Icons.fingerprint, size: 28, color: Theme.of(context).colorScheme.primary),
-                      const SizedBox(width: 20),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              '${authState.biometricType} Unlock',
-                              style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'Unlock your vault with ${authState.biometricType.toLowerCase()}',
-                              style: Theme.of(
-                                context,
-                              ).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7)),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Switch(
-                        value: authState.isBiometricEnabled,
-                        onChanged: authState.isLoading ? null : (value) => _handleBiometricToggle(context, ref, value),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
-            if (authState.isBiometricAvailable) const SizedBox(height: 32),
-
-            // Current status
-            Center(
-              child: Column(
-                children: [
-                  Text(
-                    'Current theme: ${themeNotifier.currentThemeName}',
-                    style: Theme.of(
-                      context,
-                    ).textTheme.bodyLarge?.copyWith(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6), fontStyle: FontStyle.italic),
-                  ),
-                  if (authState.isBiometricAvailable) ...[
-                    const SizedBox(height: 8),
-                    Text(
-                      '${authState.biometricType}: ${authState.isBiometricEnabled ? "Enabled" : "Disabled"}',
-                      style: Theme.of(
-                        context,
-                      ).textTheme.bodyLarge?.copyWith(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6), fontStyle: FontStyle.italic),
-                    ),
-                  ],
-                  // Debug button (only in debug mode)
-                  if (kDebugMode) ...[
-                    const SizedBox(height: 16),
-                    ElevatedButton(
-                      onPressed: () {
-                        themeNotifier.debugThemeState();
-                        ref.read(authViewModelProvider.notifier).debugBiometricState();
-                      },
-                      child: const Text('Debug Storage'),
-                    ),
-                  ],
-                ],
+          // Biometric Authentication Setting
+          if (authState.isBiometricAvailable) ...[
+            const Divider(),
+            ListTile(
+              leading: Icon(Icons.fingerprint, color: Theme.of(context).colorScheme.primary),
+              title: Text('${authState.biometricType} Unlock'),
+              trailing: Switch(
+                value: authState.isBiometricEnabled,
+                onChanged: authState.isLoading ? null : (value) => _handleBiometricToggle(context, ref, value),
               ),
             ),
           ],
-        ),
+
+          // Debug section (only in debug mode)
+          if (kDebugMode) ...[
+            const Divider(),
+            ListTile(
+              leading: const Icon(Icons.bug_report),
+              title: const Text('Debug Storage'),
+              onTap: () {
+                themeNotifier.debugThemeState();
+                ref.read(authViewModelProvider.notifier).debugBiometricState();
+              },
+            ),
+          ],
+        ],
       ),
     );
   }
@@ -130,13 +57,11 @@ class SettingsScreen extends ConsumerWidget {
     final authNotifier = ref.read(authViewModelProvider.notifier);
 
     if (enable) {
-      // Show password dialog to enable biometric
       _showMasterPasswordDialog(context, (password) async {
         await authNotifier.enableBiometric(password);
         _showResultMessage(context, ref);
       });
     } else {
-      // Disable biometric
       await authNotifier.disableBiometric();
       _showResultMessage(context, ref);
     }
