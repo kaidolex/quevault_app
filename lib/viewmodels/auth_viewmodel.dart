@@ -1,8 +1,11 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../models/auth_models.dart';
 import '../repositories/auth_repository.dart';
 import '../services/onboarding_service.dart';
+import '../services/vault_service.dart';
+import '../models/vault.dart';
 
 /// Authentication state
 @immutable
@@ -142,12 +145,51 @@ class AuthViewModel extends StateNotifier<AuthState> {
       final result = await _authRepository.setupMasterPassword(request);
 
       if (result.success) {
+        // Initialize database and create default vault
+        await _initializeDatabaseAndDefaultVault();
+
         state = state.copyWith(isLoading: false, isMasterPasswordSetup: true, isAuthenticated: true, successMessage: result.message);
       } else {
         state = state.error(result.message ?? 'Failed to setup master password');
       }
     } catch (e) {
       state = state.error('An unexpected error occurred');
+    }
+  }
+
+  /// Initialize database and create default vault
+  Future<void> _initializeDatabaseAndDefaultVault() async {
+    try {
+      // Initialize the database (this will create the vaults table)
+      await VaultService.instance.database;
+
+      // Create default "Main Vault"
+      final defaultVault = Vault(
+        id: 'main_vault_${DateTime.now().millisecondsSinceEpoch}',
+        name: 'Main Vault',
+        description: 'Your primary vault for storing passwords and sensitive information',
+        color: Colors.blue.toARGB32(),
+        isHidden: false,
+        needsUnlock: false,
+        useMasterKey: true,
+        useDifferentUnlockKey: false,
+        unlockKey: null,
+        useFingerprint: false,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+
+      await VaultService.instance.createVault(defaultVault);
+
+      if (kDebugMode) {
+        print('AuthViewModel: Database initialized and default vault created successfully');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('AuthViewModel: Error initializing database: $e');
+      }
+      // Don't fail the entire setup process if database initialization fails
+      // The user can still use the app and create vaults manually
     }
   }
 

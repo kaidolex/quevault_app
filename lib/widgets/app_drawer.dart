@@ -4,6 +4,8 @@ import 'package:shadcn_ui/shadcn_ui.dart';
 import 'package:quevault_app/viewmodels/auth_viewmodel.dart';
 import 'package:quevault_app/views/home/home_screen.dart';
 import 'package:quevault_app/views/settings/settings_screen.dart';
+import 'package:quevault_app/services/vault_service.dart';
+import 'package:quevault_app/models/vault.dart';
 
 class AppDrawer extends ConsumerWidget {
   const AppDrawer({super.key});
@@ -29,12 +31,54 @@ class AppDrawer extends ConsumerWidget {
                     Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (context) => const HomeScreen()));
                   },
                 ),
-                _buildDrawerItem(
-                  context: context,
-                  icon: Icons.folder_rounded,
-                  title: 'Vaults',
-                  onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Folders feature coming soon!')));
+
+                // Vaults Section
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
+                  child: Text(
+                    'Vaults',
+                    style: Theme.of(
+                      context,
+                    ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.primary),
+                  ),
+                ),
+
+                // Vaults List
+                FutureBuilder<List<Vault>>(
+                  future: VaultService.instance.getVisibleVaults(),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Padding(
+                        padding: EdgeInsets.all(16.0),
+                        child: Center(child: CircularProgressIndicator()),
+                      );
+                    }
+
+                    if (snapshot.hasError) {
+                      return Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Text(
+                          'Error loading vaults',
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.error),
+                        ),
+                      );
+                    }
+
+                    final vaults = snapshot.data ?? [];
+
+                    if (vaults.isEmpty) {
+                      return Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Text(
+                          'No vaults created yet',
+                          style: Theme.of(
+                            context,
+                          ).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6)),
+                        ),
+                      );
+                    }
+
+                    return Column(children: vaults.map((vault) => _buildVaultItem(context, vault)).toList());
                   },
                 ),
               ],
@@ -71,6 +115,35 @@ class AppDrawer extends ConsumerWidget {
       title: Text(title, style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Theme.of(context).colorScheme.onSurface)),
       onTap: onTap,
       contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
+    );
+  }
+
+  Widget _buildVaultItem(BuildContext context, Vault vault) {
+    return ListTile(
+      leading: Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(color: Color(vault.color), borderRadius: BorderRadius.circular(8)),
+        child: Icon(Icons.folder, color: Colors.white, size: 20),
+      ),
+      title: Text(
+        vault.name,
+        style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Theme.of(context).colorScheme.onSurface, fontWeight: FontWeight.w500),
+      ),
+      subtitle: vault.description.isNotEmpty
+          ? Text(
+              vault.description,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6)),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            )
+          : null,
+      trailing: vault.needsUnlock ? Icon(Icons.lock, size: 16, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6)) : null,
+      onTap: () {
+        // TODO: Navigate to vault details or open vault
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Opening vault: ${vault.name}')));
+      },
+      contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 2),
     );
   }
 
