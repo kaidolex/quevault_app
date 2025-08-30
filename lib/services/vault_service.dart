@@ -16,10 +16,11 @@ class VaultService {
 
   Future<Database> _initDatabase() async {
     String path = join(await getDatabasesPath(), 'quevault.db');
-    return await openDatabase(path, version: 1, onCreate: _onCreate);
+    return await openDatabase(path, version: 2, onCreate: _onCreate, onUpgrade: _onUpgrade);
   }
 
   Future<void> _onCreate(Database db, int version) async {
+    // Create vaults table
     await db.execute('''
       CREATE TABLE vaults(
         id TEXT PRIMARY KEY,
@@ -36,6 +37,46 @@ class VaultService {
         updatedAt INTEGER NOT NULL
       )
     ''');
+
+    // Create credentials table for version 2
+    if (version >= 2) {
+      await db.execute('''
+        CREATE TABLE credentials(
+          id TEXT PRIMARY KEY,
+          name TEXT NOT NULL,
+          vaultId TEXT NOT NULL,
+          username TEXT NOT NULL,
+          password TEXT NOT NULL,
+          website TEXT,
+          notes TEXT,
+          customFields TEXT,
+          createdAt INTEGER NOT NULL,
+          updatedAt INTEGER NOT NULL,
+          FOREIGN KEY (vaultId) REFERENCES vaults (id) ON DELETE CASCADE
+        )
+      ''');
+    }
+  }
+
+  Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      // Add credentials table for version 2
+      await db.execute('''
+        CREATE TABLE credentials(
+          id TEXT PRIMARY KEY,
+          name TEXT NOT NULL,
+          vaultId TEXT NOT NULL,
+          username TEXT NOT NULL,
+          password TEXT NOT NULL,
+          website TEXT,
+          notes TEXT,
+          customFields TEXT,
+          createdAt INTEGER NOT NULL,
+          updatedAt INTEGER NOT NULL,
+          FOREIGN KEY (vaultId) REFERENCES vaults (id) ON DELETE CASCADE
+        )
+      ''');
+    }
   }
 
   Future<void> createVault(Vault vault) async {
