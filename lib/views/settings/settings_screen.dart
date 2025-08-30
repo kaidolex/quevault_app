@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:quevault_app/viewmodels/theme_viewmodel.dart';
 import 'package:quevault_app/viewmodels/auth_viewmodel.dart';
+import 'package:quevault_app/widgets/base_scaffold.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -12,8 +13,8 @@ class SettingsScreen extends ConsumerWidget {
     final themeNotifier = ref.read(themeViewModelProvider.notifier);
     final authState = ref.watch(authViewModelProvider);
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Settings'), centerTitle: true),
+    return BaseScaffold(
+      title: 'Settings',
       body: ListView(
         children: [
           // Dark Mode Setting

@@ -2,34 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 import 'package:quevault_app/core/constants/app_spacing.dart';
-import 'package:quevault_app/viewmodels/auth_viewmodel.dart';
-import 'package:quevault_app/views/settings/settings_screen.dart';
+import 'package:quevault_app/widgets/base_scaffold.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('QueVault'),
-        centerTitle: true,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.settings),
-            onPressed: () {
-              Navigator.of(context).push(MaterialPageRoute(builder: (context) => const SettingsScreen()));
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () {
-              ref.read(authViewModelProvider.notifier).logout();
-              // Navigation will be handled automatically by AppRouter
-            },
-          ),
-        ],
-      ),
+    return BaseScaffold(
+      title: 'QueVault',
       body: Center(
         child: Padding(
           padding: AppSpacing.paddingLG,
