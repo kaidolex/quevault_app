@@ -1,45 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
+import 'package:flutter_expandable_fab/flutter_expandable_fab.dart';
 import 'package:quevault_app/core/constants/app_spacing.dart';
 import 'package:quevault_app/widgets/base_scaffold.dart';
 
-class HomeScreen extends ConsumerStatefulWidget {
+class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
   @override
-  ConsumerState<HomeScreen> createState() => _HomeScreenState();
-}
-
-class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStateMixin {
-  bool _isExpanded = false;
-  late AnimationController _animationController;
-
-  @override
-  void initState() {
-    super.initState();
-    _animationController = AnimationController(duration: const Duration(milliseconds: 300), vsync: this);
-  }
-
-  @override
-  void dispose() {
-    _animationController.dispose();
-    super.dispose();
-  }
-
-  void _toggleExpanded() {
-    setState(() {
-      _isExpanded = !_isExpanded;
-      if (_isExpanded) {
-        _animationController.forward();
-      } else {
-        _animationController.reverse();
-      }
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return BaseScaffold(
       title: 'QueVault',
       onSearch: (query) {
@@ -48,70 +18,38 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
           ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Searching for: $query')));
         }
       },
-      floatingActionButton: Stack(
+      floatingActionButtonLocation: ExpandableFab.location,
+      floatingActionButton: ExpandableFab(
+        type: ExpandableFabType.up,
+        distance: 70.0,
+        openButtonBuilder: RotateFloatingActionButtonBuilder(
+          child: const Icon(Icons.add),
+          fabSize: ExpandableFabSize.regular,
+          foregroundColor: Theme.of(context).colorScheme.onPrimary,
+          backgroundColor: Theme.of(context).colorScheme.primary,
+          shape: const CircleBorder(),
+        ),
+        closeButtonBuilder: DefaultFloatingActionButtonBuilder(
+          child: const Icon(Icons.close),
+          fabSize: ExpandableFabSize.regular,
+          foregroundColor: Theme.of(context).colorScheme.onPrimary,
+          backgroundColor: Theme.of(context).colorScheme.primary,
+          shape: const CircleBorder(),
+        ),
         children: [
-          // Password button
-          AnimatedPositioned(
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeInOut,
-            bottom: _isExpanded ? 140.0 : 16.0,
-            right: 16.0,
-            child: AnimatedOpacity(
-              duration: const Duration(milliseconds: 200),
-              opacity: _isExpanded ? 1.0 : 0.0,
-              child: FloatingActionButton.small(
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Add password coming soon!')));
-                },
-                heroTag: 'password',
-                child: const Icon(Icons.lock),
-              ),
-            ),
+          FloatingActionButton(
+            heroTag: 'vault',
+            onPressed: () {
+              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Add vault coming soon!')));
+            },
+            child: const Icon(Icons.folder),
           ),
-          // Note button
-          AnimatedPositioned(
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeInOut,
-            bottom: _isExpanded ? 80.0 : 16.0,
-            right: 16.0,
-            child: AnimatedOpacity(
-              duration: const Duration(milliseconds: 200),
-              opacity: _isExpanded ? 1.0 : 0.0,
-              child: FloatingActionButton.small(
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Add note coming soon!')));
-                },
-                heroTag: 'note',
-                child: const Icon(Icons.note),
-              ),
-            ),
-          ),
-          // Card button
-          AnimatedPositioned(
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeInOut,
-            bottom: _isExpanded ? 20.0 : 16.0,
-            right: 16.0,
-            child: AnimatedOpacity(
-              duration: const Duration(milliseconds: 200),
-              opacity: _isExpanded ? 1.0 : 0.0,
-              child: FloatingActionButton.small(
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Add card coming soon!')));
-                },
-                heroTag: 'card',
-                child: const Icon(Icons.credit_card),
-              ),
-            ),
-          ),
-          // Main FAB
-          Positioned(
-            bottom: 16.0,
-            right: 16.0,
-            child: FloatingActionButton(
-              onPressed: _toggleExpanded,
-              child: AnimatedRotation(turns: _isExpanded ? 0.125 : 0.0, duration: const Duration(milliseconds: 300), child: const Icon(Icons.add)),
-            ),
+          FloatingActionButton(
+            heroTag: 'credentials',
+            onPressed: () {
+              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Add credentials coming soon!')));
+            },
+            child: const Icon(Icons.lock),
           ),
         ],
       ),

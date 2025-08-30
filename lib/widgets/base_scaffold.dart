@@ -6,6 +6,7 @@ class BaseScaffold extends StatefulWidget {
   final Widget body;
   final List<Widget>? actions;
   final Widget? floatingActionButton;
+  final FloatingActionButtonLocation? floatingActionButtonLocation;
   final bool centerTitle;
   final Function(String)? onSearch;
 
@@ -15,6 +16,7 @@ class BaseScaffold extends StatefulWidget {
     required this.body,
     this.actions,
     this.floatingActionButton,
+    this.floatingActionButtonLocation,
     this.centerTitle = true,
     this.onSearch,
   });
@@ -86,6 +88,7 @@ class _BaseScaffoldState extends State<BaseScaffold> {
       drawer: const AppDrawer(),
       body: widget.body,
       floatingActionButton: widget.floatingActionButton,
+      floatingActionButtonLocation: widget.floatingActionButtonLocation,
     );
   }
 }
