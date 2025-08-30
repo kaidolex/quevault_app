@@ -32,9 +32,8 @@ class AppDrawer extends ConsumerWidget {
                 _buildDrawerItem(
                   context: context,
                   icon: Icons.folder_rounded,
-                  title: 'Folders',
+                  title: 'Vaults',
                   onTap: () {
-                    // TODO: Navigate to folders screen when implemented
                     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Folders feature coming soon!')));
                   },
                 ),
