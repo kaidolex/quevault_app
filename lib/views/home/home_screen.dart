@@ -4,6 +4,7 @@ import 'package:shadcn_ui/shadcn_ui.dart';
 import 'package:flutter_expandable_fab/flutter_expandable_fab.dart';
 import 'package:quevault_app/core/constants/app_spacing.dart';
 import 'package:quevault_app/widgets/base_scaffold.dart';
+import 'package:quevault_app/views/vault/create_vault_screen.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -40,7 +41,7 @@ class HomeScreen extends ConsumerWidget {
           FloatingActionButton(
             heroTag: 'vault',
             onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Add vault coming soon!')));
+              Navigator.of(context).push(MaterialPageRoute(builder: (context) => const CreateVaultScreen()));
             },
             child: const Icon(Icons.folder),
           ),
