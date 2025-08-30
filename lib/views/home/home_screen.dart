@@ -11,6 +11,12 @@ class HomeScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return BaseScaffold(
       title: 'QueVault',
+      onSearch: (query) {
+        // TODO: Implement search functionality for passwords
+        if (query.isNotEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Searching for: $query')));
+        }
+      },
       body: Center(
         child: Padding(
           padding: AppSpacing.paddingLG,
