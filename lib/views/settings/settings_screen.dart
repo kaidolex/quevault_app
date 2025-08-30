@@ -15,12 +15,6 @@ class SettingsScreen extends ConsumerWidget {
 
     return BaseScaffold(
       title: 'Settings',
-      onSearch: (query) {
-        // Search functionality for settings (if needed)
-        if (query.isNotEmpty) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Searching settings for: $query')));
-        }
-      },
       body: ListView(
         children: [
           // Dark Mode Setting

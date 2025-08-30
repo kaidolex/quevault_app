@@ -10,17 +10,35 @@ import '../services/vault_service.dart';
 @immutable
 class CredentialsState {
   final bool isLoading;
-  final List<Credential> credentials;
+  final List<Credential> allCredentials; // All credentials from all vaults
+  final List<Credential> filteredCredentials; // Currently displayed credentials (filtered or all)
   final List<Vault> availableVaults;
+  final String searchQuery; // Current search query
   final String? errorMessage;
 
-  const CredentialsState({this.isLoading = false, this.credentials = const [], this.availableVaults = const [], this.errorMessage});
+  const CredentialsState({
+    this.isLoading = false,
+    this.allCredentials = const [],
+    this.filteredCredentials = const [],
+    this.availableVaults = const [],
+    this.searchQuery = '',
+    this.errorMessage,
+  });
 
-  CredentialsState copyWith({bool? isLoading, List<Credential>? credentials, List<Vault>? availableVaults, String? errorMessage}) {
+  CredentialsState copyWith({
+    bool? isLoading,
+    List<Credential>? allCredentials,
+    List<Credential>? filteredCredentials,
+    List<Vault>? availableVaults,
+    String? searchQuery,
+    String? errorMessage,
+  }) {
     return CredentialsState(
       isLoading: isLoading ?? this.isLoading,
-      credentials: credentials ?? this.credentials,
+      allCredentials: allCredentials ?? this.allCredentials,
+      filteredCredentials: filteredCredentials ?? this.filteredCredentials,
       availableVaults: availableVaults ?? this.availableVaults,
+      searchQuery: searchQuery ?? this.searchQuery,
       errorMessage: errorMessage,
     );
   }
@@ -36,8 +54,14 @@ class CredentialsState {
   }
 
   /// Creates a success state
-  CredentialsState success({required List<Credential> credentials, required List<Vault> availableVaults}) {
-    return copyWith(isLoading: false, credentials: credentials, availableVaults: availableVaults, errorMessage: null);
+  CredentialsState success({required List<Credential> allCredentials, required List<Vault> availableVaults}) {
+    return copyWith(
+      isLoading: false,
+      allCredentials: allCredentials,
+      filteredCredentials: allCredentials, // Initially show all credentials
+      availableVaults: availableVaults,
+      errorMessage: null,
+    );
   }
 }
 
@@ -95,7 +119,7 @@ class CredentialsViewModel extends StateNotifier<CredentialsState> {
       // Sort credentials by name
       allCredentials.sort((a, b) => a.name.compareTo(b.name));
 
-      state = state.success(credentials: allCredentials, availableVaults: availableVaults);
+      state = state.success(allCredentials: allCredentials, availableVaults: availableVaults);
     } catch (e) {
       if (kDebugMode) {
         print('CredentialsViewModel: Error loading credentials: $e');
@@ -109,72 +133,29 @@ class CredentialsViewModel extends StateNotifier<CredentialsState> {
     await loadCredentials();
   }
 
-  /// Searches credentials by query within available vaults
-  Future<void> searchCredentials(String query) async {
+  /// Searches credentials locally without making database calls
+  void searchCredentials(String query) {
     if (query.isEmpty) {
-      await loadCredentials();
+      // Show all credentials when search is empty
+      state = state.copyWith(searchQuery: '', filteredCredentials: state.allCredentials, errorMessage: null);
       return;
     }
 
-    state = state.loading();
+    // Filter credentials locally
+    final searchResults = state.allCredentials.where((credential) {
+      final searchLower = query.toLowerCase();
+      return credential.name.toLowerCase().contains(searchLower) ||
+          credential.username.toLowerCase().contains(searchLower) ||
+          (credential.website?.toLowerCase().contains(searchLower) ?? false);
+    }).toList();
 
-    try {
-      // Get all vaults and apply the same filtering logic as loadCredentials
-      final allVaults = await _vaultService.getAllVaults();
-
-      // Filter vaults: include main vault and unlocked vaults
-      final availableVaults = allVaults.where((vault) {
-        // Always include main vault
-        if (vault.name == 'Main Vault') return true;
-        // Exclude hidden vaults
-        if (vault.isHidden) return false;
-        // Exclude vaults that need unlock (for now, until we implement proper unlocking)
-        if (vault.needsUnlock) return false;
-        // Include all other visible vaults that don't need unlock
-        return true;
-      }).toList();
-
-      // Search within available vaults only
-      final List<Credential> searchResults = [];
-      for (final vault in availableVaults) {
-        try {
-          final vaultCredentials = await _credentialService.getCredentialsByVaultId(vault.id);
-          // Filter credentials within this vault that match the search query
-          final matchingCredentials = vaultCredentials.where((credential) {
-            final searchLower = query.toLowerCase();
-            return credential.name.toLowerCase().contains(searchLower) ||
-                credential.username.toLowerCase().contains(searchLower) ||
-                (credential.website?.toLowerCase().contains(searchLower) ?? false);
-          }).toList();
-          searchResults.addAll(matchingCredentials);
-
-          if (kDebugMode && matchingCredentials.isNotEmpty) {
-            print('CredentialsViewModel: Found ${matchingCredentials.length} matching credentials in vault "${vault.name}" for query "$query"');
-          }
-        } catch (e) {
-          if (kDebugMode) {
-            print('Error searching credentials for vault ${vault.name}: $e');
-          }
-          // Continue searching other vaults even if one fails
-        }
-      }
-
-      if (kDebugMode) {
-        print(
-          'CredentialsViewModel: Search for "$query" found ${searchResults.length} total results across ${availableVaults.length} available vaults',
-        );
-      }
-
-      // Sort search results by name
-      searchResults.sort((a, b) => a.name.compareTo(b.name));
-
-      state = state.copyWith(isLoading: false, credentials: searchResults, availableVaults: availableVaults, errorMessage: null);
-    } catch (e) {
-      if (kDebugMode) {
-        print('CredentialsViewModel: Error searching credentials: $e');
-      }
-      state = state.error('Failed to search credentials');
+    if (kDebugMode) {
+      print(
+        'CredentialsViewModel: Local search for "$query" found ${searchResults.length} results from ${state.allCredentials.length} total credentials',
+      );
     }
+
+    state = state.copyWith(searchQuery: query, filteredCredentials: searchResults, errorMessage: null);
   }
 
   /// Deletes a credential

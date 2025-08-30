@@ -18,6 +18,9 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
+  final TextEditingController _searchController = TextEditingController();
+  final FocusNode _searchFocusNode = FocusNode();
+
   @override
   void initState() {
     super.initState();
@@ -27,12 +30,25 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     });
   }
 
-  void _onSearch(String query) {
-    if (query.isEmpty) {
-      ref.read(credentialsViewModelProvider.notifier).loadCredentials();
-    } else {
-      ref.read(credentialsViewModelProvider.notifier).searchCredentials(query);
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Sync search controller with state
+    final credentialsState = ref.read(credentialsViewModelProvider);
+    if (_searchController.text != credentialsState.searchQuery) {
+      _searchController.text = credentialsState.searchQuery;
     }
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _searchFocusNode.dispose();
+    super.dispose();
+  }
+
+  void _onSearch(String query) {
+    ref.read(credentialsViewModelProvider.notifier).searchCredentials(query);
   }
 
   void _copyToClipboard(String text) {
@@ -99,7 +115,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
     return BaseScaffold(
       title: 'QueVault',
-      onSearch: _onSearch,
       floatingActionButtonLocation: ExpandableFab.location,
       floatingActionButton: ExpandableFab(
         type: ExpandableFabType.up,
@@ -170,7 +185,55 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       );
     }
 
-    if (credentialsState.credentials.isEmpty) {
+    // Always show search field and list area
+    return Column(
+      children: [
+        // Search field
+        Padding(
+          padding: AppSpacing.paddingLG,
+          child: TextField(
+            controller: _searchController,
+            focusNode: _searchFocusNode,
+            onChanged: _onSearch,
+            textInputAction: TextInputAction.search,
+            decoration: InputDecoration(
+              hintText: 'Search passwords...',
+              prefixIcon: const Icon(Icons.search),
+              suffixIcon: _searchController.text.isNotEmpty
+                  ? IconButton(
+                      icon: const Icon(Icons.clear),
+                      onPressed: () {
+                        _searchController.clear();
+                        _onSearch('');
+                      },
+                    )
+                  : null,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Theme.of(context).colorScheme.outline),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.5)),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Theme.of(context).colorScheme.primary, width: 2),
+              ),
+              filled: true,
+              fillColor: Theme.of(context).colorScheme.surface,
+            ),
+          ),
+        ),
+        // Credentials list area
+        Expanded(child: _buildCredentialsList(credentialsState)),
+      ],
+    );
+  }
+
+  Widget _buildCredentialsList(CredentialsState credentialsState) {
+    // Show empty state only when there are no credentials at all (not when filtering)
+    if (credentialsState.allCredentials.isEmpty) {
       return Center(
         child: Padding(
           padding: AppSpacing.paddingLG,
@@ -207,13 +270,41 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       );
     }
 
+    // Show no search results message when filtering but no results found
+    if (credentialsState.searchQuery.isNotEmpty && credentialsState.filteredCredentials.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: AppSpacing.paddingLG,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.search_off, size: 80, color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.6)),
+              AppSpacing.verticalSpacingLG,
+              Text(
+                'No credentials found for "${credentialsState.searchQuery}"',
+                style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold),
+                textAlign: TextAlign.center,
+              ),
+              AppSpacing.verticalSpacingMD,
+              Text(
+                'Try adjusting your search terms or check for typos.',
+                style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Colors.grey[600]),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // Show the credentials list
     return RefreshIndicator(
       onRefresh: () => ref.read(credentialsViewModelProvider.notifier).refresh(),
       child: ListView.builder(
-        padding: AppSpacing.paddingLG,
-        itemCount: credentialsState.credentials.length,
+        padding: EdgeInsets.only(left: AppSpacing.paddingLG.left, right: AppSpacing.paddingLG.right, bottom: AppSpacing.paddingLG.bottom),
+        itemCount: credentialsState.filteredCredentials.length,
         itemBuilder: (context, index) {
-          final credential = credentialsState.credentials[index];
+          final credential = credentialsState.filteredCredentials[index];
           final vaultName = ref.read(credentialsViewModelProvider.notifier).getVaultName(credential.vaultId);
           final vaultColor = ref.read(credentialsViewModelProvider.notifier).getVaultColor(credential.vaultId);
 
