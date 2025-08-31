@@ -12,16 +12,16 @@ import 'package:quevault_app/services/credential_service.dart';
 import 'package:quevault_app/services/vault_service.dart';
 import 'package:quevault_app/viewmodels/hidden_vault_viewmodel.dart';
 
-class CreateCredentialScreen extends ConsumerStatefulWidget {
-  final Vault? preSelectedVault;
+class EditCredentialScreen extends ConsumerStatefulWidget {
+  final Credential credential;
 
-  const CreateCredentialScreen({super.key, this.preSelectedVault});
+  const EditCredentialScreen({super.key, required this.credential});
 
   @override
-  ConsumerState<CreateCredentialScreen> createState() => _CreateCredentialScreenState();
+  ConsumerState<EditCredentialScreen> createState() => _EditCredentialScreenState();
 }
 
-class _CreateCredentialScreenState extends ConsumerState<CreateCredentialScreen> {
+class _EditCredentialScreenState extends ConsumerState<EditCredentialScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _usernameController = TextEditingController();
@@ -44,6 +44,7 @@ class _CreateCredentialScreenState extends ConsumerState<CreateCredentialScreen>
   void initState() {
     super.initState();
     _loadVaults();
+    _populateFields();
   }
 
   @override
@@ -54,6 +55,15 @@ class _CreateCredentialScreenState extends ConsumerState<CreateCredentialScreen>
     _websiteController.dispose();
     _notesController.dispose();
     super.dispose();
+  }
+
+  void _populateFields() {
+    _nameController.text = widget.credential.name;
+    _usernameController.text = widget.credential.username;
+    _passwordController.text = widget.credential.password;
+    _websiteController.text = widget.credential.website ?? '';
+    _notesController.text = widget.credential.notes ?? '';
+    _customFields = List.from(widget.credential.customFields);
   }
 
   Future<void> _loadVaults() async {
@@ -71,17 +81,8 @@ class _CreateCredentialScreenState extends ConsumerState<CreateCredentialScreen>
 
       setState(() {
         _vaults = allVaults;
-        // Set pre-selected vault if provided, otherwise Main Vault as default
-        if (allVaults.isNotEmpty) {
-          if (widget.preSelectedVault != null) {
-            _selectedVault = allVaults.firstWhere(
-              (vault) => vault.id == widget.preSelectedVault!.id,
-              orElse: () => allVaults.firstWhere((vault) => vault.name == 'Main Vault', orElse: () => allVaults.first),
-            );
-          } else {
-            _selectedVault = allVaults.firstWhere((vault) => vault.name == 'Main Vault', orElse: () => allVaults.first);
-          }
-        }
+        // Set the current vault as selected
+        _selectedVault = allVaults.firstWhere((vault) => vault.id == widget.credential.vaultId, orElse: () => allVaults.first);
       });
     } catch (e) {
       if (mounted) {
@@ -186,7 +187,7 @@ class _CreateCredentialScreenState extends ConsumerState<CreateCredentialScreen>
     });
   }
 
-  Future<void> _saveCredential() async {
+  Future<void> _updateCredential() async {
     if (!_formKey.currentState!.validate()) return;
     if (_selectedVault == null) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please select a vault')));
@@ -198,8 +199,8 @@ class _CreateCredentialScreenState extends ConsumerState<CreateCredentialScreen>
     });
 
     try {
-      final credential = Credential(
-        id: 'credential_${DateTime.now().millisecondsSinceEpoch}',
+      final updatedCredential = Credential(
+        id: widget.credential.id,
         name: _nameController.text,
         vaultId: _selectedVault!.id,
         username: _usernameController.text,
@@ -207,19 +208,19 @@ class _CreateCredentialScreenState extends ConsumerState<CreateCredentialScreen>
         website: _websiteController.text.isNotEmpty ? _websiteController.text : null,
         notes: _notesController.text.isNotEmpty ? _notesController.text : null,
         customFields: _customFields,
-        createdAt: DateTime.now(),
+        createdAt: widget.credential.createdAt,
         updatedAt: DateTime.now(),
       );
 
-      await CredentialService.instance.createCredential(credential);
+      await CredentialService.instance.updateCredential(updatedCredential);
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Credential saved successfully')));
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Credential updated successfully')));
         Navigator.of(context).pop(true); // Return true to indicate success
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to save credential: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to update credential: $e')));
       }
     } finally {
       setState(() {
@@ -240,13 +241,13 @@ class _CreateCredentialScreenState extends ConsumerState<CreateCredentialScreen>
     }
 
     return BaseScaffold(
-      title: 'Create Credential',
+      title: 'Edit Credential',
       automaticallyImplyLeading: true,
       actions: [
         IconButton(
-          onPressed: _isLoading ? null : _saveCredential,
+          onPressed: _isLoading ? null : _updateCredential,
           icon: _isLoading ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.save),
-          tooltip: 'Save Credential',
+          tooltip: 'Update Credential',
         ),
       ],
       body: Form(

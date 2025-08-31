@@ -8,6 +8,8 @@ import 'package:quevault_app/widgets/base_scaffold.dart';
 import 'package:quevault_app/widgets/credential_list_widget.dart';
 import 'package:quevault_app/views/vault/create_vault_screen.dart';
 import 'package:quevault_app/views/vault/create_credential_screen.dart';
+import 'package:quevault_app/views/vault/edit_credential_screen.dart';
+import 'package:quevault_app/views/vault/credential_details_screen.dart';
 import 'package:quevault_app/viewmodels/credentials_viewmodel.dart';
 import 'package:quevault_app/models/credential.dart';
 
@@ -57,57 +59,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Copied to clipboard')));
   }
 
-  void _showCredentialDetails(Credential credential) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(credential.name),
-        content: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _buildDetailRow('Username', credential.username),
-              _buildDetailRow('Password', credential.password, isPassword: true),
-              if (credential.website != null) _buildDetailRow('Website', credential.website!),
-              if (credential.notes != null) _buildDetailRow('Notes', credential.notes!),
-              if (credential.customFields.isNotEmpty) ...[
-                const SizedBox(height: 16),
-                const Text('Custom Fields:', style: TextStyle(fontWeight: FontWeight.bold)),
-                const SizedBox(height: 8),
-                ...credential.customFields.map((field) => _buildDetailRow(field.name, field.value)),
-              ],
-            ],
-          ),
-        ),
-        actions: [TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Close'))],
-      ),
-    );
-  }
+  void _showCredentialDetails(Credential credential) async {
+    final result = await Navigator.of(context).push(MaterialPageRoute(builder: (context) => CredentialDetailsScreen(credential: credential)));
 
-  Widget _buildDetailRow(String label, String value, {bool isPassword = false}) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 80,
-            child: Text('$label:', style: const TextStyle(fontWeight: FontWeight.bold)),
-          ),
-          Expanded(
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(isPassword ? '••••••••' : value, style: TextStyle(fontFamily: isPassword ? 'monospace' : null)),
-                ),
-                IconButton(onPressed: () => _copyToClipboard(value), icon: const Icon(Icons.copy, size: 16), tooltip: 'Copy $label'),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
+    // Handle result from credential details screen
+    if (result == true) {
+      // Refresh the credentials list if credential was updated or deleted
+      ref.read(credentialsViewModelProvider.notifier).loadCredentials();
+    }
   }
 
   @override
@@ -116,6 +75,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
     return BaseScaffold(
       title: 'QueVault',
+      automaticallyImplyLeading: false,
       floatingActionButtonLocation: ExpandableFab.location,
       floatingActionButton: ExpandableFab(
         type: ExpandableFabType.up,
@@ -243,6 +203,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               }
             },
             onShowCredentialDetails: _showCredentialDetails,
+            onEditCredential: (credential) async {
+              final result = await Navigator.of(context).push(MaterialPageRoute(builder: (context) => EditCredentialScreen(credential: credential)));
+              if (result == true) {
+                ref.read(credentialsViewModelProvider.notifier).loadCredentials();
+              }
+            },
             onDeleteCredential: (credential) {
               ref.read(credentialsViewModelProvider.notifier).deleteCredential(credential.id);
             },

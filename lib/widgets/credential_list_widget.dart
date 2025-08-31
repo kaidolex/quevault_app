@@ -16,6 +16,7 @@ class CredentialListWidget extends StatelessWidget {
   final Future<void> Function()? onRefresh;
   final VoidCallback? onAddCredential;
   final Function(Credential) onShowCredentialDetails;
+  final Function(Credential) onEditCredential;
   final Function(Credential) onDeleteCredential;
   final Function(String) onSearch;
 
@@ -32,6 +33,7 @@ class CredentialListWidget extends StatelessWidget {
     this.onRefresh,
     this.onAddCredential,
     required this.onShowCredentialDetails,
+    required this.onEditCredential,
     required this.onDeleteCredential,
     required this.onSearch,
   });
@@ -205,6 +207,9 @@ class CredentialListWidget extends StatelessWidget {
                     case 'view':
                       onShowCredentialDetails(credential);
                       break;
+                    case 'edit':
+                      onEditCredential(credential);
+                      break;
                     case 'copy_username':
                       _copyToClipboard(context, credential.username);
                       break;
@@ -220,6 +225,10 @@ class CredentialListWidget extends StatelessWidget {
                   const PopupMenuItem(
                     value: 'view',
                     child: Row(children: [Icon(Icons.visibility), SizedBox(width: 8), Text('View Details')]),
+                  ),
+                  const PopupMenuItem(
+                    value: 'edit',
+                    child: Row(children: [Icon(Icons.edit), SizedBox(width: 8), Text('Edit')]),
                   ),
                   const PopupMenuItem(
                     value: 'copy_username',

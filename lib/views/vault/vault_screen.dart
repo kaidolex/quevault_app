@@ -9,9 +9,13 @@ import 'package:quevault_app/models/vault.dart';
 import 'package:quevault_app/models/credential.dart';
 import 'package:quevault_app/models/auth_models.dart';
 import 'package:quevault_app/services/credential_service.dart';
+import 'package:quevault_app/services/vault_service.dart';
 import 'package:quevault_app/services/biometric_service.dart';
 import 'package:quevault_app/repositories/auth_repository.dart';
 import 'package:quevault_app/views/vault/create_credential_screen.dart';
+import 'package:quevault_app/views/vault/edit_credential_screen.dart';
+import 'package:quevault_app/views/vault/credential_details_screen.dart';
+import 'package:quevault_app/views/vault/edit_vault_screen.dart';
 
 class VaultScreen extends ConsumerStatefulWidget {
   final Vault vault;
@@ -95,6 +99,97 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
     setState(() {
       _filteredCredentials = searchResults;
     });
+  }
+
+  void _showDeleteVaultDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Vault'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Are you sure you want to delete "${widget.vault.name}"?'),
+            const SizedBox(height: 16),
+            const Text('This action will:', style: TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            Text('• Move all ${_credentials.length} credential${_credentials.length != 1 ? 's' : ''} to the Main Vault'),
+            const Text('• Permanently delete this vault'),
+            const SizedBox(height: 8),
+            const Text(
+              'This action cannot be undone.',
+              style: TextStyle(fontWeight: FontWeight.bold, color: Colors.red),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Cancel')),
+          ShadButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              _deleteVault();
+            },
+            child: const Text('Delete Vault', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _deleteVault() async {
+    setState(() {
+      _isLoadingCredentials = true;
+    });
+
+    try {
+      // Get the main vault by name
+      final allVaults = await VaultService.instance.getAllVaults();
+      final mainVault = allVaults.firstWhere((vault) => vault.name == 'Main Vault');
+      if (mainVault == null) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Error: Main vault not found')));
+        return;
+      }
+
+      // Move all credentials to main vault
+      for (final credential in _credentials) {
+        final updatedCredential = Credential(
+          id: credential.id,
+          name: credential.name,
+          vaultId: mainVault.id,
+          username: credential.username,
+          password: credential.password,
+          website: credential.website,
+          notes: credential.notes,
+          customFields: credential.customFields,
+          createdAt: credential.createdAt,
+          updatedAt: DateTime.now(),
+        );
+        await CredentialService.instance.updateCredential(updatedCredential);
+      }
+
+      // Delete the vault
+      await VaultService.instance.deleteVault(widget.vault.id);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Vault deleted successfully. ${_credentials.length} credential${_credentials.length != 1 ? 's' : ''} moved to Main Vault.'),
+          ),
+        );
+        Navigator.of(context).pop(true); // Return to previous screen to refresh vault list
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error deleting vault: $e')));
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoadingCredentials = false;
+        });
+      }
+    }
   }
 
   Future<void> _unlockVault() async {
@@ -199,67 +294,44 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Copied to clipboard')));
   }
 
-  void _showCredentialDetails(Credential credential) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(credential.name),
-        content: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _buildDetailRow('Username', credential.username),
-              _buildDetailRow('Password', credential.password, isPassword: true),
-              if (credential.website != null) _buildDetailRow('Website', credential.website!),
-              if (credential.notes != null) _buildDetailRow('Notes', credential.notes!),
-              if (credential.customFields.isNotEmpty) ...[
-                const SizedBox(height: 16),
-                const Text('Custom Fields:', style: TextStyle(fontWeight: FontWeight.bold)),
-                const SizedBox(height: 8),
-                ...credential.customFields.map((field) => _buildDetailRow(field.name, field.value)),
-              ],
-            ],
-          ),
-        ),
-        actions: [TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Close'))],
-      ),
-    );
-  }
+  void _showCredentialDetails(Credential credential) async {
+    final result = await Navigator.of(context).push(MaterialPageRoute(builder: (context) => CredentialDetailsScreen(credential: credential)));
 
-  Widget _buildDetailRow(String label, String value, {bool isPassword = false}) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 80,
-            child: Text('$label:', style: const TextStyle(fontWeight: FontWeight.bold)),
-          ),
-          Expanded(
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(isPassword ? '••••••••' : value, style: TextStyle(fontFamily: isPassword ? 'monospace' : null)),
-                ),
-                IconButton(onPressed: () => _copyToClipboard(value), icon: const Icon(Icons.copy, size: 16), tooltip: 'Copy $label'),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
+    // Handle result from credential details screen
+    if (result == true) {
+      // Refresh the credentials list if credential was updated or deleted
+      _loadCredentials();
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return BaseScaffold(
       title: 'QueVault',
+      automaticallyImplyLeading: true,
+      actions: [
+        // Only show edit and delete buttons if vault is unlocked and it's not the main vault
+        if (_isUnlocked && widget.vault.name != 'Main Vault') ...[
+          IconButton(
+            onPressed: () async {
+              final result = await Navigator.of(context).push(MaterialPageRoute(builder: (context) => EditVaultScreen(vault: widget.vault)));
+              if (result == true) {
+                // Refresh the vault data if needed
+                Navigator.of(context).pop(true); // Return to previous screen to refresh vault list
+              }
+            },
+            icon: const Icon(Icons.edit),
+            tooltip: 'Edit Vault',
+          ),
+          IconButton(onPressed: _showDeleteVaultDialog, icon: const Icon(Icons.delete), tooltip: 'Delete Vault'),
+        ],
+      ],
       floatingActionButton: _isUnlocked
           ? FloatingActionButton(
               onPressed: () async {
-                final result = await Navigator.of(context).push(MaterialPageRoute(builder: (context) => const CreateCredentialScreen()));
+                final result = await Navigator.of(
+                  context,
+                ).push(MaterialPageRoute(builder: (context) => CreateCredentialScreen(preSelectedVault: widget.vault)));
                 if (result == true) {
                   _loadCredentials();
                 }
@@ -503,12 +575,22 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
               vaultName: widget.vault.name,
               onRefresh: _loadCredentials,
               onAddCredential: () async {
-                final result = await Navigator.of(context).push(MaterialPageRoute(builder: (context) => const CreateCredentialScreen()));
+                final result = await Navigator.of(
+                  context,
+                ).push(MaterialPageRoute(builder: (context) => CreateCredentialScreen(preSelectedVault: widget.vault)));
                 if (result == true) {
                   _loadCredentials();
                 }
               },
               onShowCredentialDetails: _showCredentialDetails,
+              onEditCredential: (credential) async {
+                final result = await Navigator.of(
+                  context,
+                ).push(MaterialPageRoute(builder: (context) => EditCredentialScreen(credential: credential)));
+                if (result == true) {
+                  _loadCredentials();
+                }
+              },
               onDeleteCredential: (credential) async {
                 try {
                   await CredentialService.instance.deleteCredential(credential.id);

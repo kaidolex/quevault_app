@@ -6,14 +6,16 @@ import 'package:quevault_app/widgets/base_scaffold.dart';
 import 'package:quevault_app/services/vault_service.dart';
 import 'package:quevault_app/models/vault.dart';
 
-class CreateVaultScreen extends ConsumerStatefulWidget {
-  const CreateVaultScreen({super.key});
+class EditVaultScreen extends ConsumerStatefulWidget {
+  final Vault vault;
+
+  const EditVaultScreen({super.key, required this.vault});
 
   @override
-  ConsumerState<CreateVaultScreen> createState() => _CreateVaultScreenState();
+  ConsumerState<EditVaultScreen> createState() => _EditVaultScreenState();
 }
 
-class _CreateVaultScreenState extends ConsumerState<CreateVaultScreen> {
+class _EditVaultScreenState extends ConsumerState<EditVaultScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _descriptionController = TextEditingController();
@@ -45,6 +47,7 @@ class _CreateVaultScreenState extends ConsumerState<CreateVaultScreen> {
   void initState() {
     super.initState();
     _checkFingerprintAvailability();
+    _populateFields();
   }
 
   @override
@@ -55,6 +58,20 @@ class _CreateVaultScreenState extends ConsumerState<CreateVaultScreen> {
     super.dispose();
   }
 
+  void _populateFields() {
+    _nameController.text = widget.vault.name;
+    _descriptionController.text = widget.vault.description;
+    _selectedColor = Color(widget.vault.color);
+    _isHidden = widget.vault.isHidden;
+    _needsUnlock = widget.vault.needsUnlock;
+    _useMasterKey = widget.vault.useMasterKey;
+    _useDifferentUnlockKey = widget.vault.useDifferentUnlockKey;
+    _useFingerprint = widget.vault.useFingerprint;
+    if (widget.vault.unlockKey != null) {
+      _unlockKeyController.text = widget.vault.unlockKey!;
+    }
+  }
+
   Future<void> _checkFingerprintAvailability() async {
     // TODO: Implement fingerprint availability check
     setState(() {
@@ -62,7 +79,7 @@ class _CreateVaultScreenState extends ConsumerState<CreateVaultScreen> {
     });
   }
 
-  Future<void> _saveVault() async {
+  Future<void> _updateVault() async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() {
@@ -70,8 +87,8 @@ class _CreateVaultScreenState extends ConsumerState<CreateVaultScreen> {
     });
 
     try {
-      final vault = Vault(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
+      final updatedVault = Vault(
+        id: widget.vault.id,
         name: _nameController.text.trim(),
         description: _descriptionController.text.trim(),
         color: _selectedColor.value,
@@ -81,19 +98,19 @@ class _CreateVaultScreenState extends ConsumerState<CreateVaultScreen> {
         useDifferentUnlockKey: _useDifferentUnlockKey,
         unlockKey: _useDifferentUnlockKey ? _unlockKeyController.text.trim() : null,
         useFingerprint: _useFingerprint && _isFingerprintAvailable,
-        createdAt: DateTime.now(),
+        createdAt: widget.vault.createdAt,
         updatedAt: DateTime.now(),
       );
 
-      await VaultService.instance.createVault(vault);
+      await VaultService.instance.updateVault(updatedVault);
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Vault created successfully!')));
-        Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Vault updated successfully!')));
+        Navigator.of(context).pop(true); // Return true to indicate success
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error creating vault: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error updating vault: $e')));
       }
     } finally {
       if (mounted) {
@@ -106,14 +123,47 @@ class _CreateVaultScreenState extends ConsumerState<CreateVaultScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Prevent editing the main vault
+    if (widget.vault.name == 'Main Vault') {
+      return BaseScaffold(
+        title: 'Edit Vault',
+        automaticallyImplyLeading: true,
+        body: Center(
+          child: Padding(
+            padding: AppSpacing.paddingLG,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.lock, size: 80, color: Theme.of(context).colorScheme.error.withValues(alpha: 0.6)),
+                AppSpacing.verticalSpacingLG,
+                Text(
+                  'Main Vault Cannot Be Edited',
+                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold),
+                  textAlign: TextAlign.center,
+                ),
+                AppSpacing.verticalSpacingMD,
+                Text(
+                  'The main vault is a system vault that cannot be modified. You can only edit custom vaults.',
+                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Colors.grey[600]),
+                  textAlign: TextAlign.center,
+                ),
+                AppSpacing.verticalSpacingLG,
+                ShadButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Go Back')),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     return BaseScaffold(
-      title: 'Create Vault',
+      title: 'Edit Vault',
       automaticallyImplyLeading: true,
       actions: [
         IconButton(
-          onPressed: _isLoading ? null : _saveVault,
+          onPressed: _isLoading ? null : _updateVault,
           icon: _isLoading ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.save),
-          tooltip: 'Save Vault',
+          tooltip: 'Update Vault',
         ),
       ],
       body: Form(

@@ -15,6 +15,7 @@ class SettingsScreen extends ConsumerWidget {
 
     return BaseScaffold(
       title: 'Settings',
+      automaticallyImplyLeading: true,
       body: ListView(
         children: [
           // Dark Mode Setting
