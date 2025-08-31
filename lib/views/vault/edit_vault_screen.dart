@@ -171,122 +171,175 @@ class _EditVaultScreenState extends ConsumerState<EditVaultScreen> {
         child: ListView(
           padding: AppSpacing.paddingLG,
           children: [
-            // Vault Name
-            TextFormField(
-              controller: _nameController,
-              decoration: const InputDecoration(labelText: 'Vault Name', hintText: 'Enter vault name', border: OutlineInputBorder()),
-              validator: (value) {
-                if (value == null || value.trim().isEmpty) {
-                  return 'Vault name is required';
-                }
-                return null;
-              },
-            ),
+            // Basic Information Section
+            Text('Basic Information', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
             AppSpacing.verticalSpacingMD,
 
-            // Description
-            TextFormField(
-              controller: _descriptionController,
-              decoration: const InputDecoration(
-                labelText: 'Description',
-                hintText: 'Enter vault description (optional)',
-                border: OutlineInputBorder(),
-              ),
-              maxLines: 3,
-            ),
-            AppSpacing.verticalSpacingMD,
-
-            // Color Selection
-            Text('Color', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
-            AppSpacing.verticalSpacingSM,
-            Wrap(
-              spacing: 12,
-              runSpacing: 8,
-              children: _colorOptions.map((color) {
-                final isSelected = _selectedColor == color;
-                return GestureDetector(
-                  onTap: () => setState(() => _selectedColor = color),
-                  child: Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      color: color,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: isSelected ? Theme.of(context).colorScheme.primary : Colors.transparent, width: 3),
+            // Name Card
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.folder, size: 20, color: Theme.of(context).colorScheme.primary),
+                        const SizedBox(width: 12),
+                        Text('Vault Name *', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+                      ],
                     ),
-                    child: isSelected ? Icon(Icons.check, color: Colors.white, size: 24) : null,
-                  ),
-                );
-              }).toList(),
+                    const SizedBox(height: 12),
+                    ShadInput(controller: _nameController, placeholder: Text('Enter vault name')),
+                  ],
+                ),
+              ),
+            ),
+            AppSpacing.verticalSpacingSM,
+
+            // Description Card
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.description, size: 20, color: Theme.of(context).colorScheme.primary),
+                        const SizedBox(width: 12),
+                        Text('Description', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    ShadInput(controller: _descriptionController, placeholder: Text('Enter vault description (optional)'), maxLines: 3),
+                  ],
+                ),
+              ),
+            ),
+            AppSpacing.verticalSpacingSM,
+
+            // Color Selection Card
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.palette, size: 20, color: Theme.of(context).colorScheme.primary),
+                        const SizedBox(width: 12),
+                        Text('Color', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 12,
+                      runSpacing: 8,
+                      children: _colorOptions.map((color) {
+                        final isSelected = _selectedColor == color;
+                        return GestureDetector(
+                          onTap: () => setState(() => _selectedColor = color),
+                          child: Container(
+                            width: 48,
+                            height: 48,
+                            decoration: BoxDecoration(
+                              color: color,
+                              shape: BoxShape.circle,
+                              border: Border.all(color: isSelected ? Theme.of(context).colorScheme.primary : Colors.transparent, width: 3),
+                            ),
+                            child: isSelected ? Icon(Icons.check, color: Colors.white, size: 24) : null,
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ],
+                ),
+              ),
             ),
             AppSpacing.verticalSpacingLG,
-            AppSpacing.verticalSpacingLG,
 
-            // Checkboxes
-            CheckboxListTile(
-              value: _isHidden,
-              onChanged: (value) => setState(() => _isHidden = value ?? false),
-              title: const Text('Is Hidden'),
-              contentPadding: EdgeInsets.zero,
-            ),
+            // Security Settings Section
+            Text('Security Settings', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+            AppSpacing.verticalSpacingMD,
 
-            CheckboxListTile(
-              value: _needsUnlock,
-              onChanged: (value) => setState(() => _needsUnlock = value ?? false),
-              title: const Text('Needs to unlock before can be opened'),
-              contentPadding: EdgeInsets.zero,
+            // Security Options Card
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    CheckboxListTile(
+                      value: _isHidden,
+                      onChanged: (value) => setState(() => _isHidden = value ?? false),
+                      title: const Text('Is Hidden'),
+                      contentPadding: EdgeInsets.zero,
+                      controlAffinity: ListTileControlAffinity.leading,
+                    ),
+                    CheckboxListTile(
+                      value: _needsUnlock,
+                      onChanged: (value) => setState(() => _needsUnlock = value ?? false),
+                      title: const Text('Needs to unlock before can be opened'),
+                      contentPadding: EdgeInsets.zero,
+                      controlAffinity: ListTileControlAffinity.leading,
+                    ),
+                  ],
+                ),
+              ),
             ),
             AppSpacing.verticalSpacingLG,
 
             // Vault Open Options (only show if needsUnlock is true)
             if (_needsUnlock) ...[
-              Text('Vault Open Options', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+              Text('Vault Open Options', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
               AppSpacing.verticalSpacingMD,
 
-              CheckboxListTile(
-                value: _useMasterKey,
-                onChanged: (value) => setState(() => _useMasterKey = value ?? true),
-                title: const Text('Use Master Key'),
-                contentPadding: EdgeInsets.zero,
-                enabled: false, // Always checked and cannot be unchecked
-              ),
+              // Unlock Options Card
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      CheckboxListTile(
+                        value: _useMasterKey,
+                        onChanged: (value) => setState(() => _useMasterKey = value ?? true),
+                        title: const Text('Use Master Key'),
+                        contentPadding: EdgeInsets.zero,
+                        controlAffinity: ListTileControlAffinity.leading,
+                        enabled: false, // Always checked and cannot be unchecked
+                      ),
+                      CheckboxListTile(
+                        value: _useDifferentUnlockKey,
+                        onChanged: (value) => setState(() => _useDifferentUnlockKey = value ?? false),
+                        title: const Text('Use Different Unlock Key'),
+                        contentPadding: EdgeInsets.zero,
+                        controlAffinity: ListTileControlAffinity.leading,
+                      ),
 
-              CheckboxListTile(
-                value: _useDifferentUnlockKey,
-                onChanged: (value) => setState(() => _useDifferentUnlockKey = value ?? false),
-                title: const Text('Use Different Unlock Key'),
-                contentPadding: EdgeInsets.zero,
-              ),
+                      // Unlock Key Input (only show if useDifferentUnlockKey is true)
+                      if (_useDifferentUnlockKey) ...[
+                        const SizedBox(height: 16),
+                        ShadInput(controller: _unlockKeyController, placeholder: Text('Enter custom unlock key'), obscureText: true),
+                      ],
 
-              // Unlock Key Input (only show if useDifferentUnlockKey is true)
-              if (_useDifferentUnlockKey) ...[
-                AppSpacing.verticalSpacingSM,
-                TextFormField(
-                  controller: _unlockKeyController,
-                  decoration: const InputDecoration(labelText: 'Unlock Key', hintText: 'Enter custom unlock key', border: OutlineInputBorder()),
-                  obscureText: true,
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'Unlock key is required';
-                    }
-                    if (value.length < 6) {
-                      return 'Unlock key must be at least 6 characters';
-                    }
-                    return null;
-                  },
+                      // Fingerprint option (only show if available)
+                      if (_isFingerprintAvailable) ...[
+                        CheckboxListTile(
+                          value: _useFingerprint,
+                          onChanged: (value) => setState(() => _useFingerprint = value ?? false),
+                          title: const Text('Use Fingerprint'),
+                          contentPadding: EdgeInsets.zero,
+                          controlAffinity: ListTileControlAffinity.leading,
+                        ),
+                      ],
+                    ],
+                  ),
                 ),
-                AppSpacing.verticalSpacingSM,
-              ],
-
-              // Fingerprint option (only show if available)
-              if (_isFingerprintAvailable) ...[
-                CheckboxListTile(
-                  value: _useFingerprint,
-                  onChanged: (value) => setState(() => _useFingerprint = value ?? false),
-                  title: const Text('Use Fingerprint'),
-                  contentPadding: EdgeInsets.zero,
-                ),
-              ],
+              ),
+              AppSpacing.verticalSpacingLG,
             ],
           ],
         ),

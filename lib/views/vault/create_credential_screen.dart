@@ -131,20 +131,14 @@ class _CreateCredentialScreenState extends ConsumerState<CreateCredentialScreen>
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            TextFormField(
-              controller: fieldNameController,
-              decoration: const InputDecoration(labelText: 'Field Name', hintText: 'e.g., API Key, PIN', border: OutlineInputBorder()),
-            ),
+            ShadInput(controller: fieldNameController, placeholder: Text('e.g., API Key, PIN')),
             AppSpacing.verticalSpacingMD,
-            TextFormField(
-              controller: fieldValueController,
-              decoration: const InputDecoration(labelText: 'Field Value', hintText: 'Enter the value', border: OutlineInputBorder()),
-            ),
+            ShadInput(controller: fieldValueController, placeholder: Text('Enter the value')),
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Cancel')),
-          ElevatedButton(
+          ShadButton.outline(onPressed: () => Navigator.of(context).pop(), child: const Text('Cancel')),
+          ShadButton(
             onPressed: () {
               if (fieldNameController.text.isNotEmpty) {
                 setState(() {
@@ -528,14 +522,10 @@ class _CreateCredentialScreenState extends ConsumerState<CreateCredentialScreen>
                         Row(
                           children: [
                             Expanded(
-                              child: Container(
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.3),
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(color: Theme.of(context).colorScheme.outline.withOpacity(0.2)),
-                                ),
-                                child: Text(field.value, style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontFamily: 'monospace')),
+                              child: ShadInput(
+                                controller: TextEditingController(text: field.value),
+                                placeholder: Text('Field value'),
+                                readOnly: true,
                               ),
                             ),
                             const SizedBox(width: 8),
