@@ -1,5 +1,6 @@
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
+import 'package:flutter/foundation.dart';
 import '../models/vault.dart';
 
 class VaultService {
@@ -16,7 +17,7 @@ class VaultService {
 
   Future<Database> _initDatabase() async {
     String path = join(await getDatabasesPath(), 'quevault.db');
-    return await openDatabase(path, version: 2, onCreate: _onCreate, onUpgrade: _onUpgrade);
+    return await openDatabase(path, version: 3, onCreate: _onCreate, onUpgrade: _onUpgrade);
   }
 
   Future<void> _onCreate(Database db, int version) async {
@@ -47,6 +48,8 @@ class VaultService {
           vaultId TEXT NOT NULL,
           username TEXT NOT NULL,
           password TEXT NOT NULL,
+          passwordIV TEXT,
+          isEncrypted INTEGER DEFAULT 0,
           website TEXT,
           notes TEXT,
           customFields TEXT,
@@ -68,6 +71,8 @@ class VaultService {
           vaultId TEXT NOT NULL,
           username TEXT NOT NULL,
           password TEXT NOT NULL,
+          passwordIV TEXT,
+          isEncrypted INTEGER DEFAULT 0,
           website TEXT,
           notes TEXT,
           customFields TEXT,
@@ -76,6 +81,19 @@ class VaultService {
           FOREIGN KEY (vaultId) REFERENCES vaults (id) ON DELETE CASCADE
         )
       ''');
+    }
+
+    if (oldVersion < 3) {
+      // Add encryption fields to existing credentials table
+      try {
+        await db.execute('ALTER TABLE credentials ADD COLUMN passwordIV TEXT');
+        await db.execute('ALTER TABLE credentials ADD COLUMN isEncrypted INTEGER DEFAULT 0');
+      } catch (e) {
+        // Columns might already exist, ignore error
+        if (kDebugMode) {
+          print('VaultService: Encryption columns might already exist: $e');
+        }
+      }
     }
   }
 

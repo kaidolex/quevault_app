@@ -4,6 +4,8 @@ class Credential {
   final String vaultId;
   final String username;
   final String password;
+  final String? passwordIV;
+  final bool isEncrypted;
   final String? website;
   final String? notes;
   final List<CustomField> customFields;
@@ -16,6 +18,8 @@ class Credential {
     required this.vaultId,
     required this.username,
     required this.password,
+    this.passwordIV,
+    this.isEncrypted = false,
     this.website,
     this.notes,
     this.customFields = const [],
@@ -30,6 +34,8 @@ class Credential {
       'vaultId': vaultId,
       'username': username,
       'password': password,
+      'passwordIV': passwordIV,
+      'isEncrypted': isEncrypted ? 1 : 0,
       'website': website,
       'notes': notes,
       'customFields': customFields.map((field) => field.toMap()).toList(),
@@ -45,6 +51,8 @@ class Credential {
       vaultId: map['vaultId'],
       username: map['username'],
       password: map['password'],
+      passwordIV: map['passwordIV'],
+      isEncrypted: map['isEncrypted'] == 1,
       website: map['website'],
       notes: map['notes'],
       customFields: (map['customFields'] as List<dynamic>?)?.map((field) => CustomField.fromMap(field)).toList() ?? [],
@@ -59,6 +67,8 @@ class Credential {
     String? vaultId,
     String? username,
     String? password,
+    String? passwordIV,
+    bool? isEncrypted,
     String? website,
     String? notes,
     List<CustomField>? customFields,
@@ -71,6 +81,8 @@ class Credential {
       vaultId: vaultId ?? this.vaultId,
       username: username ?? this.username,
       password: password ?? this.password,
+      passwordIV: passwordIV ?? this.passwordIV,
+      isEncrypted: isEncrypted ?? this.isEncrypted,
       website: website ?? this.website,
       notes: notes ?? this.notes,
       customFields: customFields ?? this.customFields,

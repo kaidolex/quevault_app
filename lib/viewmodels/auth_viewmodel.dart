@@ -5,6 +5,7 @@ import '../models/auth_models.dart';
 import '../repositories/auth_repository.dart';
 import '../services/onboarding_service.dart';
 import '../services/vault_service.dart';
+import '../services/encryption_key_service.dart';
 import '../models/vault.dart';
 
 /// Authentication state
@@ -145,6 +146,14 @@ class AuthViewModel extends StateNotifier<AuthState> {
       final result = await _authRepository.setupMasterPassword(request);
 
       if (result.success) {
+        // Initialize encryption key
+        final encryptionKeyInitialized = await EncryptionKeyService.instance.initializeEncryptionKey(password);
+        if (!encryptionKeyInitialized) {
+          if (kDebugMode) {
+            print('AuthViewModel: Failed to initialize encryption key during setup');
+          }
+        }
+
         // Initialize database and create default vault
         await _initializeDatabaseAndDefaultVault();
 
@@ -202,6 +211,14 @@ class AuthViewModel extends StateNotifier<AuthState> {
       final result = await _authRepository.login(request);
 
       if (result.success) {
+        // Initialize encryption key for decryption
+        final encryptionKeyValidated = await EncryptionKeyService.instance.validateEncryptionKey(password);
+        if (!encryptionKeyValidated) {
+          if (kDebugMode) {
+            print('AuthViewModel: Failed to validate encryption key during login');
+          }
+        }
+
         state = state.copyWith(isLoading: false, isAuthenticated: true, successMessage: result.message);
       } else {
         state = state.error(result.message ?? 'Login failed');
@@ -232,6 +249,9 @@ class AuthViewModel extends StateNotifier<AuthState> {
 
   /// Logs out the user
   void logout() {
+    // Clear encryption key for security
+    EncryptionKeyService.instance.clearEncryptionKey();
+
     // Preserve biometric settings when logging out
     state = state.copyWith(
       isAuthenticated: false,
