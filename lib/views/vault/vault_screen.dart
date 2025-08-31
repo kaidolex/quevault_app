@@ -13,6 +13,7 @@ import 'package:quevault_app/services/biometric_service.dart';
 import 'package:quevault_app/repositories/auth_repository.dart';
 import 'package:quevault_app/views/vault/create_credential_screen.dart';
 import 'package:quevault_app/views/vault/edit_credential_screen.dart';
+import 'package:quevault_app/views/vault/edit_vault_screen.dart';
 
 class VaultScreen extends ConsumerStatefulWidget {
   final Vault vault;
@@ -257,6 +258,21 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
   Widget build(BuildContext context) {
     return BaseScaffold(
       title: 'QueVault',
+      actions: [
+        // Only show edit button if vault is unlocked and it's not the main vault
+        if (_isUnlocked && widget.vault.name != 'Main Vault')
+          IconButton(
+            onPressed: () async {
+              final result = await Navigator.of(context).push(MaterialPageRoute(builder: (context) => EditVaultScreen(vault: widget.vault)));
+              if (result == true) {
+                // Refresh the vault data if needed
+                Navigator.of(context).pop(true); // Return to previous screen to refresh vault list
+              }
+            },
+            icon: const Icon(Icons.edit),
+            tooltip: 'Edit Vault',
+          ),
+      ],
       floatingActionButton: _isUnlocked
           ? FloatingActionButton(
               onPressed: () async {
