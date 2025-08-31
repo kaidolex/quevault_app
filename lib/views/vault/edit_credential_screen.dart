@@ -10,6 +10,7 @@ import 'package:quevault_app/models/credential.dart';
 import 'package:quevault_app/models/vault.dart';
 import 'package:quevault_app/services/credential_service.dart';
 import 'package:quevault_app/services/vault_service.dart';
+import 'package:quevault_app/viewmodels/hidden_vault_viewmodel.dart';
 
 class EditCredentialScreen extends ConsumerStatefulWidget {
   final Credential credential;
@@ -68,10 +69,20 @@ class _EditCredentialScreenState extends ConsumerState<EditCredentialScreen> {
   Future<void> _loadVaults() async {
     try {
       final vaults = await VaultService.instance.getVisibleVaults();
+      final hiddenVaults = await VaultService.instance.getHiddenVaults();
+
+      // Check if hidden vaults should be shown
+      final hiddenVaultState = ref.read(hiddenVaultViewModelProvider);
+      final allVaults = List<Vault>.from(vaults);
+
+      if (hiddenVaultState.showHiddenVaults) {
+        allVaults.addAll(hiddenVaults);
+      }
+
       setState(() {
-        _vaults = vaults;
+        _vaults = allVaults;
         // Set the current vault as selected
-        _selectedVault = vaults.firstWhere((vault) => vault.id == widget.credential.vaultId, orElse: () => vaults.first);
+        _selectedVault = allVaults.firstWhere((vault) => vault.id == widget.credential.vaultId, orElse: () => allVaults.first);
       });
     } catch (e) {
       if (mounted) {
@@ -220,6 +231,15 @@ class _EditCredentialScreenState extends ConsumerState<EditCredentialScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final hiddenVaultState = ref.watch(hiddenVaultViewModelProvider);
+
+    // Refresh vaults when hidden vault state changes
+    if (hiddenVaultState.showHiddenVaults && !_vaults.any((vault) => vault.isHidden)) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _loadVaults();
+      });
+    }
+
     return BaseScaffold(
       title: 'Edit Credential',
       automaticallyImplyLeading: true,
@@ -296,10 +316,24 @@ class _EditCredentialScreenState extends ConsumerState<EditCredentialScreen> {
                                   Container(
                                     width: 16,
                                     height: 16,
-                                    decoration: BoxDecoration(color: Color(vault.color), shape: BoxShape.circle),
+                                    decoration: BoxDecoration(
+                                      color: vault.isHidden ? Color(vault.color).withValues(alpha: 0.7) : Color(vault.color),
+                                      shape: BoxShape.circle,
+                                    ),
                                   ),
                                   const SizedBox(width: 8),
-                                  Text(vault.name),
+                                  Expanded(
+                                    child: Text(
+                                      vault.name,
+                                      style: vault.isHidden
+                                          ? Theme.of(
+                                              context,
+                                            ).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7))
+                                          : null,
+                                    ),
+                                  ),
+                                  if (vault.isHidden)
+                                    Icon(Icons.visibility_off, size: 16, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5)),
                                 ],
                               ),
                             );

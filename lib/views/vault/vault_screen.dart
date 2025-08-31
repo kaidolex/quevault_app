@@ -329,7 +329,9 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
       floatingActionButton: _isUnlocked
           ? FloatingActionButton(
               onPressed: () async {
-                final result = await Navigator.of(context).push(MaterialPageRoute(builder: (context) => const CreateCredentialScreen()));
+                final result = await Navigator.of(
+                  context,
+                ).push(MaterialPageRoute(builder: (context) => CreateCredentialScreen(preSelectedVault: widget.vault)));
                 if (result == true) {
                   _loadCredentials();
                 }
@@ -573,7 +575,9 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
               vaultName: widget.vault.name,
               onRefresh: _loadCredentials,
               onAddCredential: () async {
-                final result = await Navigator.of(context).push(MaterialPageRoute(builder: (context) => const CreateCredentialScreen()));
+                final result = await Navigator.of(
+                  context,
+                ).push(MaterialPageRoute(builder: (context) => CreateCredentialScreen(preSelectedVault: widget.vault)));
                 if (result == true) {
                   _loadCredentials();
                 }

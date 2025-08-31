@@ -114,4 +114,10 @@ class VaultService {
     final List<Map<String, dynamic>> maps = await db.query('vaults', where: 'isHidden = ?', whereArgs: [0]);
     return List.generate(maps.length, (i) => Vault.fromMap(maps[i]));
   }
+
+  Future<List<Vault>> getHiddenVaults() async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query('vaults', where: 'isHidden = ?', whereArgs: [1]);
+    return List.generate(maps.length, (i) => Vault.fromMap(maps[i]));
+  }
 }

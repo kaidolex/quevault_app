@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 import 'package:quevault_app/viewmodels/auth_viewmodel.dart';
+import 'package:quevault_app/viewmodels/hidden_vault_viewmodel.dart';
 import 'package:quevault_app/views/home/home_screen.dart';
 import 'package:quevault_app/views/settings/settings_screen.dart';
 import 'package:quevault_app/views/vault/vault_screen.dart';
@@ -18,6 +19,7 @@ class AppDrawer extends ConsumerStatefulWidget {
 
 class _AppDrawerState extends ConsumerState<AppDrawer> {
   List<Vault> _vaults = [];
+  List<Vault> _hiddenVaults = [];
   bool _isLoading = true;
   String? _error;
 
@@ -35,8 +37,11 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
 
     try {
       final vaults = await VaultService.instance.getVisibleVaults();
+      final hiddenVaults = await VaultService.instance.getHiddenVaults();
+
       setState(() {
         _vaults = vaults;
+        _hiddenVaults = hiddenVaults;
         _isLoading = false;
       });
     } catch (e) {
@@ -49,6 +54,15 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
 
   @override
   Widget build(BuildContext context) {
+    final hiddenVaultState = ref.watch(hiddenVaultViewModelProvider);
+
+    // Refresh vaults when hidden vault state changes
+    if (hiddenVaultState.showHiddenVaults && _hiddenVaults.isEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _loadVaults();
+      });
+    }
+
     return Drawer(
       child: RefreshIndicator(
         onRefresh: _loadVaults,
@@ -111,7 +125,7 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
                         ],
                       ),
                     )
-                  else if (_vaults.isEmpty)
+                  else if (_vaults.isEmpty && (!hiddenVaultState.showHiddenVaults || _hiddenVaults.isEmpty))
                     Padding(
                       padding: const EdgeInsets.all(16.0),
                       child: Text(
@@ -121,8 +135,35 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
                         ).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6)),
                       ),
                     )
-                  else
-                    Column(children: _vaults.map((vault) => _buildVaultItem(context, vault)).toList()),
+                  else ...[
+                    // Regular vaults
+                    ..._vaults.map((vault) => _buildVaultItem(context, vault)).toList(),
+
+                    // Hidden vaults (when revealed)
+                    if (hiddenVaultState.showHiddenVaults && _hiddenVaults.isNotEmpty) ...[
+                      const Divider(height: 32),
+
+                      // Hidden Vaults Section
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(24, 8, 24, 8),
+                        child: Row(
+                          children: [
+                            Icon(Icons.visibility_off, size: 16, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6)),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Hidden Vaults',
+                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.w600,
+                                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      ..._hiddenVaults.map((vault) => _buildHiddenVaultItem(context, vault)).toList(),
+                    ],
+                  ],
                 ],
               ),
             ),
@@ -182,6 +223,47 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
             )
           : null,
       trailing: vault.needsUnlock ? Icon(Icons.lock, size: 16, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6)) : null,
+      onTap: () async {
+        final result = await Navigator.of(context).push(MaterialPageRoute(builder: (context) => VaultScreen(vault: vault)));
+        // Refresh the vault list if we returned from a vault screen (indicating possible changes)
+        if (result == true) {
+          _loadVaults();
+        }
+      },
+      contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 2),
+    );
+  }
+
+  Widget _buildHiddenVaultItem(BuildContext context, Vault vault) {
+    return ListTile(
+      leading: Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(color: Color(vault.color).withValues(alpha: 0.7), borderRadius: BorderRadius.circular(8)),
+        child: Icon(Icons.folder, color: Colors.white, size: 20),
+      ),
+      title: Text(
+        vault.name,
+        style: Theme.of(
+          context,
+        ).textTheme.bodyLarge?.copyWith(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7), fontWeight: FontWeight.w500),
+      ),
+      subtitle: vault.description.isNotEmpty
+          ? Text(
+              vault.description,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5)),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            )
+          : null,
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (vault.needsUnlock) Icon(Icons.lock, size: 16, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5)),
+          const SizedBox(width: 4),
+          Icon(Icons.visibility_off, size: 16, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5)),
+        ],
+      ),
       onTap: () async {
         final result = await Navigator.of(context).push(MaterialPageRoute(builder: (context) => VaultScreen(vault: vault)));
         // Refresh the vault list if we returned from a vault screen (indicating possible changes)

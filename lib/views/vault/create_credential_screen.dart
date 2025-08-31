@@ -10,9 +10,12 @@ import 'package:quevault_app/models/credential.dart';
 import 'package:quevault_app/models/vault.dart';
 import 'package:quevault_app/services/credential_service.dart';
 import 'package:quevault_app/services/vault_service.dart';
+import 'package:quevault_app/viewmodels/hidden_vault_viewmodel.dart';
 
 class CreateCredentialScreen extends ConsumerStatefulWidget {
-  const CreateCredentialScreen({super.key});
+  final Vault? preSelectedVault;
+
+  const CreateCredentialScreen({super.key, this.preSelectedVault});
 
   @override
   ConsumerState<CreateCredentialScreen> createState() => _CreateCredentialScreenState();
@@ -56,11 +59,28 @@ class _CreateCredentialScreenState extends ConsumerState<CreateCredentialScreen>
   Future<void> _loadVaults() async {
     try {
       final vaults = await VaultService.instance.getVisibleVaults();
+      final hiddenVaults = await VaultService.instance.getHiddenVaults();
+
+      // Check if hidden vaults should be shown
+      final hiddenVaultState = ref.read(hiddenVaultViewModelProvider);
+      final allVaults = List<Vault>.from(vaults);
+
+      if (hiddenVaultState.showHiddenVaults) {
+        allVaults.addAll(hiddenVaults);
+      }
+
       setState(() {
-        _vaults = vaults;
-        // Set Main Vault as default if available
-        if (vaults.isNotEmpty) {
-          _selectedVault = vaults.firstWhere((vault) => vault.name == 'Main Vault', orElse: () => vaults.first);
+        _vaults = allVaults;
+        // Set pre-selected vault if provided, otherwise Main Vault as default
+        if (allVaults.isNotEmpty) {
+          if (widget.preSelectedVault != null) {
+            _selectedVault = allVaults.firstWhere(
+              (vault) => vault.id == widget.preSelectedVault!.id,
+              orElse: () => allVaults.firstWhere((vault) => vault.name == 'Main Vault', orElse: () => allVaults.first),
+            );
+          } else {
+            _selectedVault = allVaults.firstWhere((vault) => vault.name == 'Main Vault', orElse: () => allVaults.first);
+          }
         }
       });
     } catch (e) {
@@ -210,6 +230,15 @@ class _CreateCredentialScreenState extends ConsumerState<CreateCredentialScreen>
 
   @override
   Widget build(BuildContext context) {
+    final hiddenVaultState = ref.watch(hiddenVaultViewModelProvider);
+
+    // Refresh vaults when hidden vault state changes
+    if (hiddenVaultState.showHiddenVaults && !_vaults.any((vault) => vault.isHidden)) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _loadVaults();
+      });
+    }
+
     return BaseScaffold(
       title: 'Create Credential',
       automaticallyImplyLeading: true,
@@ -286,10 +315,24 @@ class _CreateCredentialScreenState extends ConsumerState<CreateCredentialScreen>
                                   Container(
                                     width: 16,
                                     height: 16,
-                                    decoration: BoxDecoration(color: Color(vault.color), shape: BoxShape.circle),
+                                    decoration: BoxDecoration(
+                                      color: vault.isHidden ? Color(vault.color).withValues(alpha: 0.7) : Color(vault.color),
+                                      shape: BoxShape.circle,
+                                    ),
                                   ),
                                   const SizedBox(width: 8),
-                                  Text(vault.name),
+                                  Expanded(
+                                    child: Text(
+                                      vault.name,
+                                      style: vault.isHidden
+                                          ? Theme.of(
+                                              context,
+                                            ).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7))
+                                          : null,
+                                    ),
+                                  ),
+                                  if (vault.isHidden)
+                                    Icon(Icons.visibility_off, size: 16, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5)),
                                 ],
                               ),
                             );
