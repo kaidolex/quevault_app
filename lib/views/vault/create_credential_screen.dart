@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -30,6 +31,11 @@ class _CreateCredentialScreenState extends ConsumerState<CreateCredentialScreen>
   List<CustomField> _customFields = [];
   bool _isPasswordVisible = false;
   bool _isLoading = false;
+  bool _useSmallLetters = true;
+  bool _useBigLetters = true;
+  bool _useNumbers = true;
+  bool _useSymbols = true;
+  double _passwordLength = 16.0;
 
   @override
   void initState() {
@@ -65,10 +71,47 @@ class _CreateCredentialScreenState extends ConsumerState<CreateCredentialScreen>
   }
 
   void _generatePassword() {
-    final generator = RandomPasswordGenerator();
-    final password = generator.randomPassword(letters: true, numbers: true, passwordLength: 16, specialChar: true);
+    final random = Random.secure();
+
+    // Build character pool based on selected options
+    String charPool = '';
+    if (_useSmallLetters) charPool += 'abcdefghijklmnopqrstuvwxyz';
+    if (_useBigLetters) charPool += 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    if (_useNumbers) charPool += '0123456789';
+    if (_useSymbols) charPool += '!@#\$%^&*()_+-=[]{}|;:,.<>?';
+
+    // Ensure at least one character type is selected
+    if (charPool.isEmpty) {
+      charPool = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#\$%^&*()_+-=[]{}|;:,.<>?';
+    }
+
+    // Start with at least one character from each selected type
+    String finalPassword = '';
+    if (_useSmallLetters) {
+      finalPassword += 'abcdefghijklmnopqrstuvwxyz'[random.nextInt(26)];
+    }
+    if (_useBigLetters) {
+      finalPassword += 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'[random.nextInt(26)];
+    }
+    if (_useNumbers) {
+      finalPassword += '0123456789'[random.nextInt(10)];
+    }
+    if (_useSymbols) {
+      finalPassword += '!@#\$%^&*()_+-=[]{}|;:,.<>?'[random.nextInt(32)];
+    }
+
+    // Fill the rest with random characters from the pool
+    while (finalPassword.length < _passwordLength.toInt()) {
+      finalPassword += charPool[random.nextInt(charPool.length)];
+    }
+
+    // Shuffle the password
+    final passwordList = finalPassword.split('');
+    passwordList.shuffle(random);
+    finalPassword = passwordList.join();
+
     setState(() {
-      _passwordController.text = password;
+      _passwordController.text = finalPassword;
     });
   }
 
@@ -188,153 +231,322 @@ class _CreateCredentialScreenState extends ConsumerState<CreateCredentialScreen>
         child: ListView(
           padding: AppSpacing.paddingLG,
           children: [
-            // Name
-            TextFormField(
-              controller: _nameController,
-              decoration: const InputDecoration(labelText: 'Name', hintText: 'e.g., Gmail Account', border: OutlineInputBorder()),
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Name is required';
-                }
-                return null;
-              },
-            ),
+            // Basic Information Section
+            Text('Basic Information', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
             AppSpacing.verticalSpacingMD,
 
-            // Vault Selection
-            Text('Vault', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
-            AppSpacing.verticalSpacingSM,
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                border: Border.all(color: Theme.of(context).colorScheme.outline),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: DropdownButtonHideUnderline(
-                child: DropdownButton<Vault>(
-                  value: _selectedVault,
-                  hint: const Text('Select a vault'),
-                  isExpanded: true,
-                  items: _vaults.map((vault) {
-                    return DropdownMenuItem<Vault>(
-                      value: vault,
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 16,
-                            height: 16,
-                            decoration: BoxDecoration(color: Color(vault.color), shape: BoxShape.circle),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(vault.name),
-                        ],
-                      ),
-                    );
-                  }).toList(),
-                  onChanged: (vault) {
-                    setState(() {
-                      _selectedVault = vault;
-                    });
-                  },
-                ),
-              ),
-            ),
-            AppSpacing.verticalSpacingLG,
-
-            // Username
-            TextFormField(
-              controller: _usernameController,
-              decoration: const InputDecoration(labelText: 'Username', hintText: 'Enter username or email', border: OutlineInputBorder()),
-            ),
-            AppSpacing.verticalSpacingMD,
-
-            // Password field with generate and copy buttons
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Password', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
-                AppSpacing.verticalSpacingSM,
-                Row(
+            // Name Card
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: TextFormField(
-                        controller: _passwordController,
-                        decoration: const InputDecoration(hintText: 'Enter password', border: OutlineInputBorder()),
-                        obscureText: !_isPasswordVisible,
-                      ),
+                    Row(
+                      children: [
+                        Icon(Icons.label, size: 20, color: Theme.of(context).colorScheme.primary),
+                        const SizedBox(width: 12),
+                        Text('Name *', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+                      ],
                     ),
-                    AppSpacing.horizontalSpacingSM,
-                    IconButton(
-                      onPressed: () {
-                        setState(() {
-                          _isPasswordVisible = !_isPasswordVisible;
-                        });
-                      },
-                      icon: Icon(_isPasswordVisible ? Icons.visibility_off : Icons.visibility),
-                    ),
-                    IconButton(onPressed: _generatePassword, icon: const Icon(Icons.refresh), tooltip: 'Generate Password'),
-                    IconButton(onPressed: () => _copyToClipboard(_passwordController.text), icon: const Icon(Icons.copy), tooltip: 'Copy Password'),
+                    const SizedBox(height: 12),
+                    ShadInput(controller: _nameController, placeholder: Text('e.g., Gmail Account')),
                   ],
                 ),
-              ],
+              ),
+            ),
+            AppSpacing.verticalSpacingSM,
+
+            // Vault Selection Card
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.folder, size: 20, color: Theme.of(context).colorScheme.primary),
+                        const SizedBox(width: 12),
+                        Text('Vault *', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Theme.of(context).colorScheme.outline),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<Vault>(
+                          value: _selectedVault,
+                          hint: const Text('Select a vault'),
+                          isExpanded: true,
+                          items: _vaults.map((vault) {
+                            return DropdownMenuItem<Vault>(
+                              value: vault,
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: 16,
+                                    height: 16,
+                                    decoration: BoxDecoration(color: Color(vault.color), shape: BoxShape.circle),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(vault.name),
+                                ],
+                              ),
+                            );
+                          }).toList(),
+                          onChanged: (vault) {
+                            setState(() {
+                              _selectedVault = vault;
+                            });
+                          },
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
             AppSpacing.verticalSpacingLG,
 
-            // Website
-            TextFormField(
-              controller: _websiteController,
-              decoration: const InputDecoration(labelText: 'Website', hintText: 'https://example.com', border: OutlineInputBorder()),
-            ),
+            // Credentials Section
+            Text('Credentials', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
             AppSpacing.verticalSpacingMD,
 
-            // Notes
-            TextFormField(
-              controller: _notesController,
-              decoration: const InputDecoration(labelText: 'Notes', hintText: 'Additional notes...', border: OutlineInputBorder()),
-              maxLines: 3,
+            // Username Card
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.person, size: 20, color: Theme.of(context).colorScheme.primary),
+                        const SizedBox(width: 12),
+                        Text('Username', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    ShadInput(controller: _usernameController, placeholder: Text('Enter username or email')),
+                  ],
+                ),
+              ),
+            ),
+            AppSpacing.verticalSpacingSM,
+
+            // Password Card
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.lock, size: 20, color: Theme.of(context).colorScheme.primary),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text('Password', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+                        ),
+                        IconButton(
+                          onPressed: () => _copyToClipboard(_passwordController.text),
+                          icon: const Icon(Icons.copy),
+                          tooltip: 'Copy Password',
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ShadInput(controller: _passwordController, placeholder: Text('Enter password'), obscureText: !_isPasswordVisible),
+                        ),
+                        const SizedBox(width: 8),
+                        IconButton(
+                          onPressed: () {
+                            setState(() {
+                              _isPasswordVisible = !_isPasswordVisible;
+                            });
+                          },
+                          icon: Icon(_isPasswordVisible ? Icons.visibility_off : Icons.visibility),
+                          tooltip: _isPasswordVisible ? 'Hide Password' : 'Show Password',
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Password Length Slider
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Password Length: ${_passwordLength.toInt()}',
+                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
+                              ),
+                              Slider(
+                                value: _passwordLength,
+                                min: 8.0,
+                                max: 50.0,
+                                divisions: 42,
+                                onChanged: (value) => setState(() => _passwordLength = value),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+
+                    // Checkboxes
+                    CheckboxListTile(
+                      value: _useSmallLetters,
+                      onChanged: (value) => setState(() => _useSmallLetters = value ?? true),
+                      title: const Text('Use small letters'),
+                      contentPadding: EdgeInsets.zero,
+                      controlAffinity: ListTileControlAffinity.leading,
+                    ),
+                    CheckboxListTile(
+                      value: _useBigLetters,
+                      onChanged: (value) => setState(() => _useBigLetters = value ?? true),
+                      title: const Text('Use big letters'),
+                      contentPadding: EdgeInsets.zero,
+                      controlAffinity: ListTileControlAffinity.leading,
+                    ),
+                    CheckboxListTile(
+                      value: _useNumbers,
+                      onChanged: (value) => setState(() => _useNumbers = value ?? true),
+                      title: const Text('Use numbers'),
+                      contentPadding: EdgeInsets.zero,
+                      controlAffinity: ListTileControlAffinity.leading,
+                    ),
+                    CheckboxListTile(
+                      value: _useSymbols,
+                      onChanged: (value) => setState(() => _useSymbols = value ?? true),
+                      title: const Text('Use symbols'),
+                      contentPadding: EdgeInsets.zero,
+                      controlAffinity: ListTileControlAffinity.leading,
+                    ),
+
+                    const SizedBox(height: 12),
+
+                    // Generate Password Button
+                    SizedBox(
+                      width: double.infinity,
+                      child: ShadButton(onPressed: _generatePassword, child: const Text('Generate Password')),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            AppSpacing.verticalSpacingLG,
+
+            // Additional Information Section
+            Text('Additional Information', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+            AppSpacing.verticalSpacingMD,
+
+            // Website Card
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.language, size: 20, color: Theme.of(context).colorScheme.primary),
+                        const SizedBox(width: 12),
+                        Text('Website', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    ShadInput(controller: _websiteController, placeholder: Text('https://example.com')),
+                  ],
+                ),
+              ),
+            ),
+            AppSpacing.verticalSpacingSM,
+
+            // Notes Card
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.note, size: 20, color: Theme.of(context).colorScheme.primary),
+                        const SizedBox(width: 12),
+                        Text('Notes', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    ShadInput(controller: _notesController, placeholder: Text('Additional notes...'), maxLines: 3),
+                  ],
+                ),
+              ),
             ),
             AppSpacing.verticalSpacingLG,
 
             // Custom Fields Section
             if (_customFields.isNotEmpty) ...[
-              Text('Custom Fields', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+              Text('Custom Fields', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
               AppSpacing.verticalSpacingMD,
 
-              ..._customFields
-                  .map(
-                    (field) => Card(
-                      margin: const EdgeInsets.only(bottom: 8),
-                      child: Padding(
-                        padding: const EdgeInsets.all(12),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+              ..._customFields.map(
+                (field) => Card(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
                           children: [
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: Text(field.name, style: Theme.of(context).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.bold)),
-                                ),
-                                IconButton(
-                                  onPressed: () => _removeCustomField(field.id),
-                                  icon: const Icon(Icons.delete, color: Colors.red),
-                                  tooltip: 'Remove Field',
-                                ),
-                              ],
+                            Icon(Icons.key, size: 20, color: Theme.of(context).colorScheme.primary),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(field.name, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
                             ),
-                            AppSpacing.verticalSpacingSM,
-                            Row(
-                              children: [
-                                Expanded(child: Text(field.value, style: Theme.of(context).textTheme.bodyMedium)),
-                                IconButton(onPressed: () => _copyToClipboard(field.value), icon: const Icon(Icons.copy), tooltip: 'Copy Value'),
-                              ],
+                            IconButton(
+                              onPressed: () => _removeCustomField(field.id),
+                              icon: const Icon(Icons.delete, color: Colors.red),
+                              tooltip: 'Remove Field',
                             ),
                           ],
                         ),
-                      ),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.3),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: Theme.of(context).colorScheme.outline.withOpacity(0.2)),
+                                ),
+                                child: Text(field.value, style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontFamily: 'monospace')),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            IconButton(onPressed: () => _copyToClipboard(field.value), icon: const Icon(Icons.copy), tooltip: 'Copy Value'),
+                          ],
+                        ),
+                      ],
                     ),
-                  )
-                  .toList(),
+                  ),
+                ),
+              ),
               AppSpacing.verticalSpacingLG,
             ],
 
