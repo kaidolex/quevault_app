@@ -5,6 +5,7 @@ import 'package:quevault_app/viewmodels/auth_viewmodel.dart';
 import 'package:quevault_app/views/home/home_screen.dart';
 import 'package:quevault_app/views/settings/settings_screen.dart';
 import 'package:quevault_app/views/vault/vault_screen.dart';
+import 'package:quevault_app/views/password_generator/password_generator_screen.dart';
 import 'package:quevault_app/services/vault_service.dart';
 import 'package:quevault_app/models/vault.dart';
 
@@ -67,6 +68,15 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
                     title: 'Home',
                     onTap: () {
                       Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (context) => const HomeScreen()));
+                    },
+                  ),
+
+                  _buildDrawerItem(
+                    context: context,
+                    icon: Icons.key_rounded,
+                    title: 'Password Generator',
+                    onTap: () {
+                      Navigator.of(context).push(MaterialPageRoute(builder: (context) => const PasswordGeneratorScreen()));
                     },
                   ),
 
