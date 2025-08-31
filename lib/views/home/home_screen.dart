@@ -8,6 +8,7 @@ import 'package:quevault_app/widgets/base_scaffold.dart';
 import 'package:quevault_app/widgets/credential_list_widget.dart';
 import 'package:quevault_app/views/vault/create_vault_screen.dart';
 import 'package:quevault_app/views/vault/create_credential_screen.dart';
+import 'package:quevault_app/views/vault/edit_credential_screen.dart';
 import 'package:quevault_app/viewmodels/credentials_viewmodel.dart';
 import 'package:quevault_app/models/credential.dart';
 
@@ -243,6 +244,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               }
             },
             onShowCredentialDetails: _showCredentialDetails,
+            onEditCredential: (credential) async {
+              final result = await Navigator.of(context).push(MaterialPageRoute(builder: (context) => EditCredentialScreen(credential: credential)));
+              if (result == true) {
+                ref.read(credentialsViewModelProvider.notifier).loadCredentials();
+              }
+            },
             onDeleteCredential: (credential) {
               ref.read(credentialsViewModelProvider.notifier).deleteCredential(credential.id);
             },

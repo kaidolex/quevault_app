@@ -12,6 +12,7 @@ import 'package:quevault_app/services/credential_service.dart';
 import 'package:quevault_app/services/biometric_service.dart';
 import 'package:quevault_app/repositories/auth_repository.dart';
 import 'package:quevault_app/views/vault/create_credential_screen.dart';
+import 'package:quevault_app/views/vault/edit_credential_screen.dart';
 
 class VaultScreen extends ConsumerStatefulWidget {
   final Vault vault;
@@ -509,6 +510,14 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
                 }
               },
               onShowCredentialDetails: _showCredentialDetails,
+              onEditCredential: (credential) async {
+                final result = await Navigator.of(
+                  context,
+                ).push(MaterialPageRoute(builder: (context) => EditCredentialScreen(credential: credential)));
+                if (result == true) {
+                  _loadCredentials();
+                }
+              },
               onDeleteCredential: (credential) async {
                 try {
                   await CredentialService.instance.deleteCredential(credential.id);
