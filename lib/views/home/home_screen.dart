@@ -5,6 +5,7 @@ import 'package:shadcn_ui/shadcn_ui.dart';
 import 'package:flutter_expandable_fab/flutter_expandable_fab.dart';
 import 'package:quevault_app/core/constants/app_spacing.dart';
 import 'package:quevault_app/widgets/base_scaffold.dart';
+import 'package:quevault_app/widgets/credential_list_widget.dart';
 import 'package:quevault_app/views/vault/create_vault_screen.dart';
 import 'package:quevault_app/views/vault/create_credential_screen.dart';
 import 'package:quevault_app/viewmodels/credentials_viewmodel.dart';
@@ -226,184 +227,29 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ),
         ),
         // Credentials list area
-        Expanded(child: _buildCredentialsList(credentialsState)),
-      ],
-    );
-  }
-
-  Widget _buildCredentialsList(CredentialsState credentialsState) {
-    // Show empty state only when there are no credentials at all (not when filtering)
-    if (credentialsState.allCredentials.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: AppSpacing.paddingLG,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.lock_outline, size: 80, color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.6)),
-              AppSpacing.verticalSpacingLG,
-              Text(
-                'Your vault is quite empty',
-                style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold),
-                textAlign: TextAlign.center,
-              ),
-              AppSpacing.verticalSpacingMD,
-              Text(
-                'Start by adding your first password to keep it secure and easily accessible.',
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Colors.grey[600]),
-                textAlign: TextAlign.center,
-              ),
-              AppSpacing.verticalSpacingLG,
-              ShadButton(
-                onPressed: () async {
-                  final result = await Navigator.of(context).push(MaterialPageRoute(builder: (context) => const CreateCredentialScreen()));
-                  if (result == true) {
-                    // Refresh the credentials list if a new credential was created
-                    ref.read(credentialsViewModelProvider.notifier).loadCredentials();
-                  }
-                },
-                child: const Text('+ New'),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    // Show no search results message when filtering but no results found
-    if (credentialsState.searchQuery.isNotEmpty && credentialsState.filteredCredentials.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: AppSpacing.paddingLG,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.search_off, size: 80, color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.6)),
-              AppSpacing.verticalSpacingLG,
-              Text(
-                'No credentials found for "${credentialsState.searchQuery}"',
-                style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold),
-                textAlign: TextAlign.center,
-              ),
-              AppSpacing.verticalSpacingMD,
-              Text(
-                'Try adjusting your search terms or check for typos.',
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Colors.grey[600]),
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    // Show the credentials list
-    return RefreshIndicator(
-      onRefresh: () => ref.read(credentialsViewModelProvider.notifier).refresh(),
-      child: ListView.builder(
-        padding: EdgeInsets.only(left: AppSpacing.paddingLG.left, right: AppSpacing.paddingLG.right, bottom: AppSpacing.paddingLG.bottom),
-        itemCount: credentialsState.filteredCredentials.length,
-        itemBuilder: (context, index) {
-          final credential = credentialsState.filteredCredentials[index];
-          final vaultName = ref.read(credentialsViewModelProvider.notifier).getVaultName(credential.vaultId);
-          final vaultColor = ref.read(credentialsViewModelProvider.notifier).getVaultColor(credential.vaultId);
-
-          return Card(
-            margin: const EdgeInsets.only(bottom: 12),
-            child: ListTile(
-              leading: CircleAvatar(
-                backgroundColor: Color(vaultColor),
-                child: Text(
-                  credential.name.isNotEmpty ? credential.name[0].toUpperCase() : '?',
-                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                ),
-              ),
-              title: Text(credential.name, style: const TextStyle(fontWeight: FontWeight.w600)),
-              subtitle: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(credential.username),
-                  Row(
-                    children: [
-                      Container(
-                        width: 8,
-                        height: 8,
-                        decoration: BoxDecoration(color: Color(vaultColor), shape: BoxShape.circle),
-                      ),
-                      const SizedBox(width: 4),
-                      Text(vaultName, style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6))),
-                    ],
-                  ),
-                ],
-              ),
-              trailing: PopupMenuButton<String>(
-                onSelected: (value) {
-                  switch (value) {
-                    case 'view':
-                      _showCredentialDetails(credential);
-                      break;
-                    case 'copy_username':
-                      _copyToClipboard(credential.username);
-                      break;
-                    case 'copy_password':
-                      _copyToClipboard(credential.password);
-                      break;
-                    case 'delete':
-                      _showDeleteConfirmation(credential);
-                      break;
-                  }
-                },
-                itemBuilder: (context) => [
-                  const PopupMenuItem(
-                    value: 'view',
-                    child: Row(children: [Icon(Icons.visibility), SizedBox(width: 8), Text('View Details')]),
-                  ),
-                  const PopupMenuItem(
-                    value: 'copy_username',
-                    child: Row(children: [Icon(Icons.copy), SizedBox(width: 8), Text('Copy Username')]),
-                  ),
-                  const PopupMenuItem(
-                    value: 'copy_password',
-                    child: Row(children: [Icon(Icons.lock), SizedBox(width: 8), Text('Copy Password')]),
-                  ),
-                  const PopupMenuItem(
-                    value: 'delete',
-                    child: Row(
-                      children: [
-                        Icon(Icons.delete, color: Colors.red),
-                        SizedBox(width: 8),
-                        Text('Delete', style: TextStyle(color: Colors.red)),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              onTap: () => _showCredentialDetails(credential),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  void _showDeleteConfirmation(Credential credential) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete Credential'),
-        content: Text('Are you sure you want to delete "${credential.name}"? This action cannot be undone.'),
-        actions: [
-          TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Cancel')),
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
+        Expanded(
+          child: CredentialListWidget(
+            credentials: credentialsState.allCredentials,
+            filteredCredentials: credentialsState.filteredCredentials,
+            isLoading: credentialsState.isLoading,
+            searchQuery: credentialsState.searchQuery,
+            vaultNames: Map.fromEntries(credentialsState.availableVaults.map((vault) => MapEntry(vault.id, vault.name))),
+            vaultColors: Map.fromEntries(credentialsState.availableVaults.map((vault) => MapEntry(vault.id, vault.color.toString()))),
+            onRefresh: () => ref.read(credentialsViewModelProvider.notifier).refresh(),
+            onAddCredential: () async {
+              final result = await Navigator.of(context).push(MaterialPageRoute(builder: (context) => const CreateCredentialScreen()));
+              if (result == true) {
+                ref.read(credentialsViewModelProvider.notifier).loadCredentials();
+              }
+            },
+            onShowCredentialDetails: _showCredentialDetails,
+            onDeleteCredential: (credential) {
               ref.read(credentialsViewModelProvider.notifier).deleteCredential(credential.id);
             },
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Delete'),
+            onSearch: _onSearch,
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

@@ -4,6 +4,7 @@ import 'package:shadcn_ui/shadcn_ui.dart';
 import 'package:quevault_app/viewmodels/auth_viewmodel.dart';
 import 'package:quevault_app/views/home/home_screen.dart';
 import 'package:quevault_app/views/settings/settings_screen.dart';
+import 'package:quevault_app/views/vault/vault_screen.dart';
 import 'package:quevault_app/services/vault_service.dart';
 import 'package:quevault_app/models/vault.dart';
 
@@ -140,8 +141,7 @@ class AppDrawer extends ConsumerWidget {
           : null,
       trailing: vault.needsUnlock ? Icon(Icons.lock, size: 16, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6)) : null,
       onTap: () {
-        // TODO: Navigate to vault details or open vault
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Opening vault: ${vault.name}')));
+        Navigator.of(context).push(MaterialPageRoute(builder: (context) => VaultScreen(vault: vault)));
       },
       contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 2),
     );

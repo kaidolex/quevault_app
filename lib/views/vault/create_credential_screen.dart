@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:random_password_generator/random_password_generator.dart';
+import 'package:shadcn_ui/shadcn_ui.dart';
 import 'package:quevault_app/core/constants/app_spacing.dart';
+import 'package:quevault_app/widgets/base_scaffold.dart';
 import 'package:quevault_app/models/credential.dart';
 import 'package:quevault_app/models/vault.dart';
 import 'package:quevault_app/services/credential_service.dart';
@@ -171,209 +173,187 @@ class _CreateCredentialScreenState extends ConsumerState<CreateCredentialScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Create Credential'),
-        actions: [
-          if (_isLoading)
-            const Padding(
-              padding: EdgeInsets.all(16.0),
-              child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)),
-            )
-          else
-            TextButton(onPressed: _saveCredential, child: const Text('Save')),
-        ],
-      ),
+    return BaseScaffold(
+      title: 'Create Credential',
+      actions: [
+        ShadButton(
+          onPressed: _isLoading ? null : _saveCredential,
+          child: _isLoading ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)) : const Text('Save'),
+        ),
+      ],
       body: Form(
         key: _formKey,
-        child: SingleChildScrollView(
+        child: ListView(
           padding: AppSpacing.paddingLG,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Basic Information
-              Text('Basic Information', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
-              AppSpacing.verticalSpacingMD,
+          children: [
+            // Name
+            TextFormField(
+              controller: _nameController,
+              decoration: const InputDecoration(labelText: 'Name', hintText: 'e.g., Gmail Account', border: OutlineInputBorder()),
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Name is required';
+                }
+                return null;
+              },
+            ),
+            AppSpacing.verticalSpacingMD,
 
-              TextFormField(
-                controller: _nameController,
-                decoration: const InputDecoration(labelText: 'Name', hintText: 'e.g., Gmail Account', border: OutlineInputBorder()),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Name is required';
-                  }
-                  return null;
-                },
+            // Vault Selection
+            Text('Vault', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+            AppSpacing.verticalSpacingSM,
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                border: Border.all(color: Theme.of(context).colorScheme.outline),
+                borderRadius: BorderRadius.circular(8),
               ),
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<Vault>(
+                  value: _selectedVault,
+                  hint: const Text('Select a vault'),
+                  isExpanded: true,
+                  items: _vaults.map((vault) {
+                    return DropdownMenuItem<Vault>(
+                      value: vault,
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 16,
+                            height: 16,
+                            decoration: BoxDecoration(color: Color(vault.color), shape: BoxShape.circle),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(vault.name),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                  onChanged: (vault) {
+                    setState(() {
+                      _selectedVault = vault;
+                    });
+                  },
+                ),
+              ),
+            ),
+            AppSpacing.verticalSpacingLG,
+
+            // Username
+            TextFormField(
+              controller: _usernameController,
+              decoration: const InputDecoration(labelText: 'Username', hintText: 'Enter username or email', border: OutlineInputBorder()),
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Username is required';
+                }
+                return null;
+              },
+            ),
+            AppSpacing.verticalSpacingMD,
+
+            // Password field with generate and copy buttons
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Password', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+                AppSpacing.verticalSpacingSM,
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextFormField(
+                        controller: _passwordController,
+                        decoration: const InputDecoration(hintText: 'Enter password', border: OutlineInputBorder()),
+                        obscureText: !_isPasswordVisible,
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Password is required';
+                          }
+                          return null;
+                        },
+                      ),
+                    ),
+                    AppSpacing.horizontalSpacingSM,
+                    IconButton(
+                      onPressed: () {
+                        setState(() {
+                          _isPasswordVisible = !_isPasswordVisible;
+                        });
+                      },
+                      icon: Icon(_isPasswordVisible ? Icons.visibility_off : Icons.visibility),
+                    ),
+                    IconButton(onPressed: _generatePassword, icon: const Icon(Icons.refresh), tooltip: 'Generate Password'),
+                    IconButton(onPressed: () => _copyToClipboard(_passwordController.text), icon: const Icon(Icons.copy), tooltip: 'Copy Password'),
+                  ],
+                ),
+              ],
+            ),
+            AppSpacing.verticalSpacingLG,
+
+            // Website
+            TextFormField(
+              controller: _websiteController,
+              decoration: const InputDecoration(labelText: 'Website', hintText: 'https://example.com', border: OutlineInputBorder()),
+            ),
+            AppSpacing.verticalSpacingMD,
+
+            // Notes
+            TextFormField(
+              controller: _notesController,
+              decoration: const InputDecoration(labelText: 'Notes', hintText: 'Additional notes...', border: OutlineInputBorder()),
+              maxLines: 3,
+            ),
+            AppSpacing.verticalSpacingLG,
+
+            // Custom Fields Section
+            if (_customFields.isNotEmpty) ...[
+              Text('Custom Fields', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
               AppSpacing.verticalSpacingMD,
 
-              // Vault Selection
-              Text('Vault', style: Theme.of(context).textTheme.labelLarge),
-              AppSpacing.verticalSpacingSM,
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(
-                  border: Border.all(color: Theme.of(context).colorScheme.outline),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: DropdownButtonHideUnderline(
-                  child: DropdownButton<Vault>(
-                    value: _selectedVault,
-                    hint: const Text('Select a vault'),
-                    isExpanded: true,
-                    items: _vaults.map((vault) {
-                      return DropdownMenuItem<Vault>(
-                        value: vault,
-                        child: Row(
+              ..._customFields
+                  .map(
+                    (field) => Card(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Container(
-                              width: 16,
-                              height: 16,
-                              decoration: BoxDecoration(color: Color(vault.color), shape: BoxShape.circle),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(field.name, style: Theme.of(context).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.bold)),
+                                ),
+                                IconButton(
+                                  onPressed: () => _removeCustomField(field.id),
+                                  icon: const Icon(Icons.delete, color: Colors.red),
+                                  tooltip: 'Remove Field',
+                                ),
+                              ],
                             ),
-                            const SizedBox(width: 8),
-                            Text(vault.name),
+                            AppSpacing.verticalSpacingSM,
+                            Row(
+                              children: [
+                                Expanded(child: Text(field.value, style: Theme.of(context).textTheme.bodyMedium)),
+                                IconButton(onPressed: () => _copyToClipboard(field.value), icon: const Icon(Icons.copy), tooltip: 'Copy Value'),
+                              ],
+                            ),
                           ],
                         ),
-                      );
-                    }).toList(),
-                    onChanged: (vault) {
-                      setState(() {
-                        _selectedVault = vault;
-                      });
-                    },
-                  ),
-                ),
-              ),
-              AppSpacing.verticalSpacingLG,
-
-              // Login Credentials
-              Text('Login Credentials', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
-              AppSpacing.verticalSpacingMD,
-
-              TextFormField(
-                controller: _usernameController,
-                decoration: const InputDecoration(labelText: 'Username', hintText: 'Enter username or email', border: OutlineInputBorder()),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Username is required';
-                  }
-                  return null;
-                },
-              ),
-              AppSpacing.verticalSpacingMD,
-
-              // Password field with generate and copy buttons
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Password', style: Theme.of(context).textTheme.labelLarge),
-                  AppSpacing.verticalSpacingSM,
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextFormField(
-                          controller: _passwordController,
-                          decoration: const InputDecoration(hintText: 'Enter password', border: OutlineInputBorder()),
-                          obscureText: !_isPasswordVisible,
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Password is required';
-                            }
-                            return null;
-                          },
-                        ),
                       ),
-                      AppSpacing.horizontalSpacingSM,
-                      IconButton(
-                        onPressed: () {
-                          setState(() {
-                            _isPasswordVisible = !_isPasswordVisible;
-                          });
-                        },
-                        icon: Icon(_isPasswordVisible ? Icons.visibility_off : Icons.visibility),
-                      ),
-                      IconButton(onPressed: _generatePassword, icon: const Icon(Icons.refresh), tooltip: 'Generate Password'),
-                      IconButton(onPressed: () => _copyToClipboard(_passwordController.text), icon: const Icon(Icons.copy), tooltip: 'Copy Password'),
-                    ],
-                  ),
-                ],
-              ),
+                    ),
+                  )
+                  .toList(),
               AppSpacing.verticalSpacingLG,
-
-              // Additional Information
-              Text('Additional', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
-              AppSpacing.verticalSpacingMD,
-
-              TextFormField(
-                controller: _websiteController,
-                decoration: const InputDecoration(labelText: 'Website', hintText: 'https://example.com', border: OutlineInputBorder()),
-              ),
-              AppSpacing.verticalSpacingMD,
-
-              TextFormField(
-                controller: _notesController,
-                decoration: const InputDecoration(labelText: 'Notes', hintText: 'Additional notes...', border: OutlineInputBorder()),
-                maxLines: 3,
-              ),
-              AppSpacing.verticalSpacingMD,
-
-              // Add Custom Field Button
-              ElevatedButton.icon(
-                onPressed: _showAddCustomFieldDialog,
-                icon: const Icon(Icons.add),
-                label: const Text('Add Custom Field'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.transparent,
-                  foregroundColor: Theme.of(context).colorScheme.primary,
-                  side: BorderSide(color: Theme.of(context).colorScheme.primary),
-                ),
-              ),
-              AppSpacing.verticalSpacingLG,
-
-              // Custom Fields Section
-              if (_customFields.isNotEmpty) ...[
-                Text('Custom Fields', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
-                AppSpacing.verticalSpacingMD,
-
-                ..._customFields
-                    .map(
-                      (field) => Card(
-                        margin: const EdgeInsets.only(bottom: 8),
-                        child: Padding(
-                          padding: const EdgeInsets.all(12),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: Text(field.name, style: Theme.of(context).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.bold)),
-                                  ),
-                                  IconButton(
-                                    onPressed: () => _removeCustomField(field.id),
-                                    icon: const Icon(Icons.delete, color: Colors.red),
-                                    tooltip: 'Remove Field',
-                                  ),
-                                ],
-                              ),
-                              AppSpacing.verticalSpacingSM,
-                              Row(
-                                children: [
-                                  Expanded(child: Text(field.value, style: Theme.of(context).textTheme.bodyMedium)),
-                                  IconButton(onPressed: () => _copyToClipboard(field.value), icon: const Icon(Icons.copy), tooltip: 'Copy Value'),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    )
-                    .toList(),
-              ],
             ],
-          ),
+
+            // Add Custom Field Button
+            ShadButton.outline(
+              onPressed: _showAddCustomFieldDialog,
+              child: const Row(mainAxisSize: MainAxisSize.min, children: [Icon(Icons.add), SizedBox(width: 8), Text('Add Custom Field')]),
+            ),
+          ],
         ),
       ),
     );
