@@ -9,6 +9,7 @@ import 'package:quevault_app/models/vault.dart';
 import 'package:quevault_app/models/credential.dart';
 import 'package:quevault_app/models/auth_models.dart';
 import 'package:quevault_app/services/credential_service.dart';
+import 'package:quevault_app/services/vault_service.dart';
 import 'package:quevault_app/services/biometric_service.dart';
 import 'package:quevault_app/repositories/auth_repository.dart';
 import 'package:quevault_app/views/vault/create_credential_screen.dart';
@@ -97,6 +98,97 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
     setState(() {
       _filteredCredentials = searchResults;
     });
+  }
+
+  void _showDeleteVaultDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Vault'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Are you sure you want to delete "${widget.vault.name}"?'),
+            const SizedBox(height: 16),
+            const Text('This action will:', style: TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            Text('• Move all ${_credentials.length} credential${_credentials.length != 1 ? 's' : ''} to the Main Vault'),
+            const Text('• Permanently delete this vault'),
+            const SizedBox(height: 8),
+            const Text(
+              'This action cannot be undone.',
+              style: TextStyle(fontWeight: FontWeight.bold, color: Colors.red),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Cancel')),
+          ShadButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              _deleteVault();
+            },
+            child: const Text('Delete Vault', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _deleteVault() async {
+    setState(() {
+      _isLoadingCredentials = true;
+    });
+
+    try {
+      // Get the main vault by name
+      final allVaults = await VaultService.instance.getAllVaults();
+      final mainVault = allVaults.firstWhere((vault) => vault.name == 'Main Vault');
+      if (mainVault == null) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Error: Main vault not found')));
+        return;
+      }
+
+      // Move all credentials to main vault
+      for (final credential in _credentials) {
+        final updatedCredential = Credential(
+          id: credential.id,
+          name: credential.name,
+          vaultId: mainVault.id,
+          username: credential.username,
+          password: credential.password,
+          website: credential.website,
+          notes: credential.notes,
+          customFields: credential.customFields,
+          createdAt: credential.createdAt,
+          updatedAt: DateTime.now(),
+        );
+        await CredentialService.instance.updateCredential(updatedCredential);
+      }
+
+      // Delete the vault
+      await VaultService.instance.deleteVault(widget.vault.id);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Vault deleted successfully. ${_credentials.length} credential${_credentials.length != 1 ? 's' : ''} moved to Main Vault.'),
+          ),
+        );
+        Navigator.of(context).pop(true); // Return to previous screen to refresh vault list
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error deleting vault: $e')));
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoadingCredentials = false;
+        });
+      }
+    }
   }
 
   Future<void> _unlockVault() async {
@@ -258,9 +350,10 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
   Widget build(BuildContext context) {
     return BaseScaffold(
       title: 'QueVault',
+      automaticallyImplyLeading: true,
       actions: [
-        // Only show edit button if vault is unlocked and it's not the main vault
-        if (_isUnlocked && widget.vault.name != 'Main Vault')
+        // Only show edit and delete buttons if vault is unlocked and it's not the main vault
+        if (_isUnlocked && widget.vault.name != 'Main Vault') ...[
           IconButton(
             onPressed: () async {
               final result = await Navigator.of(context).push(MaterialPageRoute(builder: (context) => EditVaultScreen(vault: widget.vault)));
@@ -272,6 +365,8 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
             icon: const Icon(Icons.edit),
             tooltip: 'Edit Vault',
           ),
+          IconButton(onPressed: _showDeleteVaultDialog, icon: const Icon(Icons.delete), tooltip: 'Delete Vault'),
+        ],
       ],
       floatingActionButton: _isUnlocked
           ? FloatingActionButton(

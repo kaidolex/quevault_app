@@ -8,6 +8,8 @@ class BaseScaffold extends StatefulWidget {
   final Widget? floatingActionButton;
   final FloatingActionButtonLocation? floatingActionButtonLocation;
   final bool centerTitle;
+  final bool automaticallyImplyLeading;
+  final Widget? drawer;
 
   const BaseScaffold({
     super.key,
@@ -17,6 +19,8 @@ class BaseScaffold extends StatefulWidget {
     this.floatingActionButton,
     this.floatingActionButtonLocation,
     this.centerTitle = true,
+    this.automaticallyImplyLeading = false,
+    this.drawer,
   });
 
   @override
@@ -27,8 +31,18 @@ class _BaseScaffoldState extends State<BaseScaffold> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(widget.title), centerTitle: widget.centerTitle, actions: widget.actions),
-      drawer: const AppDrawer(),
+      appBar: AppBar(
+        title: Text(widget.title),
+        centerTitle: widget.centerTitle,
+        actions: widget.actions,
+        automaticallyImplyLeading: widget.automaticallyImplyLeading,
+        leading: widget.automaticallyImplyLeading
+            ? null
+            : Builder(
+                builder: (context) => IconButton(icon: const Icon(Icons.menu), onPressed: () => Scaffold.of(context).openDrawer()),
+              ),
+      ),
+      drawer: widget.drawer ?? (widget.automaticallyImplyLeading ? null : const AppDrawer()),
       body: widget.body,
       floatingActionButton: widget.floatingActionButton,
       floatingActionButtonLocation: widget.floatingActionButtonLocation,

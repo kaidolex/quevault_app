@@ -108,10 +108,12 @@ class _CreateVaultScreenState extends ConsumerState<CreateVaultScreen> {
   Widget build(BuildContext context) {
     return BaseScaffold(
       title: 'Create Vault',
+      automaticallyImplyLeading: true,
       actions: [
-        ShadButton(
+        IconButton(
           onPressed: _isLoading ? null : _saveVault,
-          child: _isLoading ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)) : const Text('Save'),
+          icon: _isLoading ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.save),
+          tooltip: 'Save Vault',
         ),
       ],
       body: Form(
@@ -129,6 +131,18 @@ class _CreateVaultScreenState extends ConsumerState<CreateVaultScreen> {
                 }
                 return null;
               },
+            ),
+            AppSpacing.verticalSpacingMD,
+
+            // Description
+            TextFormField(
+              controller: _descriptionController,
+              decoration: const InputDecoration(
+                labelText: 'Description',
+                hintText: 'Enter vault description (optional)',
+                border: OutlineInputBorder(),
+              ),
+              maxLines: 3,
             ),
             AppSpacing.verticalSpacingMD,
 
@@ -156,17 +170,6 @@ class _CreateVaultScreenState extends ConsumerState<CreateVaultScreen> {
               }).toList(),
             ),
             AppSpacing.verticalSpacingLG,
-
-            // Description
-            TextFormField(
-              controller: _descriptionController,
-              decoration: const InputDecoration(
-                labelText: 'Description',
-                hintText: 'Enter vault description (optional)',
-                border: OutlineInputBorder(),
-              ),
-              maxLines: 3,
-            ),
             AppSpacing.verticalSpacingLG,
 
             // Checkboxes

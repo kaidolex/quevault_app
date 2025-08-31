@@ -117,6 +117,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
     return BaseScaffold(
       title: 'QueVault',
+      automaticallyImplyLeading: false,
       floatingActionButtonLocation: ExpandableFab.location,
       floatingActionButton: ExpandableFab(
         type: ExpandableFabType.up,

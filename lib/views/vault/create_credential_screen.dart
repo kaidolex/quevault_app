@@ -175,10 +175,12 @@ class _CreateCredentialScreenState extends ConsumerState<CreateCredentialScreen>
   Widget build(BuildContext context) {
     return BaseScaffold(
       title: 'Create Credential',
+      automaticallyImplyLeading: true,
       actions: [
-        ShadButton(
+        IconButton(
           onPressed: _isLoading ? null : _saveCredential,
-          child: _isLoading ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)) : const Text('Save'),
+          icon: _isLoading ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.save),
+          tooltip: 'Save Credential',
         ),
       ],
       body: Form(
@@ -244,12 +246,6 @@ class _CreateCredentialScreenState extends ConsumerState<CreateCredentialScreen>
             TextFormField(
               controller: _usernameController,
               decoration: const InputDecoration(labelText: 'Username', hintText: 'Enter username or email', border: OutlineInputBorder()),
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Username is required';
-                }
-                return null;
-              },
             ),
             AppSpacing.verticalSpacingMD,
 
@@ -266,12 +262,6 @@ class _CreateCredentialScreenState extends ConsumerState<CreateCredentialScreen>
                         controller: _passwordController,
                         decoration: const InputDecoration(hintText: 'Enter password', border: OutlineInputBorder()),
                         obscureText: !_isPasswordVisible,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Password is required';
-                          }
-                          return null;
-                        },
                       ),
                     ),
                     AppSpacing.horizontalSpacingSM,

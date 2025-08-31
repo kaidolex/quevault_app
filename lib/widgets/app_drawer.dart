@@ -8,104 +8,136 @@ import 'package:quevault_app/views/vault/vault_screen.dart';
 import 'package:quevault_app/services/vault_service.dart';
 import 'package:quevault_app/models/vault.dart';
 
-class AppDrawer extends ConsumerWidget {
+class AppDrawer extends ConsumerStatefulWidget {
   const AppDrawer({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<AppDrawer> createState() => _AppDrawerState();
+}
+
+class _AppDrawerState extends ConsumerState<AppDrawer> {
+  List<Vault> _vaults = [];
+  bool _isLoading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadVaults();
+  }
+
+  Future<void> _loadVaults() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      final vaults = await VaultService.instance.getVisibleVaults();
+      setState(() {
+        _vaults = vaults;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _error = e.toString();
+        _isLoading = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Drawer(
-      child: Column(
-        children: [
-          // Space for future header
-          const SizedBox(height: 80),
+      child: RefreshIndicator(
+        onRefresh: _loadVaults,
+        child: Column(
+          children: [
+            // Space for future header
+            const SizedBox(height: 80),
 
-          // Main menu items
-          Expanded(
-            child: ListView(
-              padding: EdgeInsets.zero,
-              children: [
-                _buildDrawerItem(
-                  context: context,
-                  icon: Icons.home_rounded,
-                  title: 'Home',
-                  onTap: () {
-                    Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (context) => const HomeScreen()));
-                  },
-                ),
-
-                // Vaults Section
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
-                  child: Text(
-                    'Vaults',
-                    style: Theme.of(
-                      context,
-                    ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.primary),
+            // Main menu items
+            Expanded(
+              child: ListView(
+                padding: EdgeInsets.zero,
+                children: [
+                  _buildDrawerItem(
+                    context: context,
+                    icon: Icons.home_rounded,
+                    title: 'Home',
+                    onTap: () {
+                      Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (context) => const HomeScreen()));
+                    },
                   ),
-                ),
 
-                // Vaults List
-                FutureBuilder<List<Vault>>(
-                  future: VaultService.instance.getVisibleVaults(),
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const Padding(
-                        padding: EdgeInsets.all(16.0),
-                        child: Center(child: CircularProgressIndicator()),
-                      );
-                    }
+                  // Vaults Section
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
+                    child: Text(
+                      'Vaults',
+                      style: Theme.of(
+                        context,
+                      ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.primary),
+                    ),
+                  ),
 
-                    if (snapshot.hasError) {
-                      return Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Text(
-                          'Error loading vaults',
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.error),
-                        ),
-                      );
-                    }
-
-                    final vaults = snapshot.data ?? [];
-
-                    if (vaults.isEmpty) {
-                      return Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Text(
-                          'No vaults created yet',
-                          style: Theme.of(
-                            context,
-                          ).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6)),
-                        ),
-                      );
-                    }
-
-                    return Column(children: vaults.map((vault) => _buildVaultItem(context, vault)).toList());
-                  },
-                ),
-              ],
+                  // Vaults List
+                  if (_isLoading)
+                    const Padding(
+                      padding: EdgeInsets.all(16.0),
+                      child: Center(child: CircularProgressIndicator()),
+                    )
+                  else if (_error != null)
+                    Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        children: [
+                          Text(
+                            'Error loading vaults',
+                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.error),
+                          ),
+                          const SizedBox(height: 8),
+                          ShadButton.outline(onPressed: _loadVaults, child: const Text('Retry')),
+                        ],
+                      ),
+                    )
+                  else if (_vaults.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Text(
+                        'No vaults created yet',
+                        style: Theme.of(
+                          context,
+                        ).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6)),
+                      ),
+                    )
+                  else
+                    Column(children: _vaults.map((vault) => _buildVaultItem(context, vault)).toList()),
+                ],
+              ),
             ),
-          ),
 
-          // Settings and Logout at bottom
-          const Divider(),
-          _buildDrawerItem(
-            context: context,
-            icon: Icons.settings_rounded,
-            title: 'Settings',
-            onTap: () {
-              Navigator.of(context).push(MaterialPageRoute(builder: (context) => const SettingsScreen()));
-            },
-          ),
-          _buildDrawerItem(
-            context: context,
-            icon: Icons.logout_rounded,
-            title: 'Logout',
-            onTap: () {
-              _showLogoutDialog(context, ref);
-            },
-          ),
-          const SizedBox(height: 16), // Bottom padding
-        ],
+            // Settings and Logout at bottom
+            const Divider(),
+            _buildDrawerItem(
+              context: context,
+              icon: Icons.settings_rounded,
+              title: 'Settings',
+              onTap: () {
+                Navigator.of(context).push(MaterialPageRoute(builder: (context) => const SettingsScreen()));
+              },
+            ),
+            _buildDrawerItem(
+              context: context,
+              icon: Icons.logout_rounded,
+              title: 'Logout',
+              onTap: () {
+                _showLogoutDialog(context, ref);
+              },
+            ),
+            const SizedBox(height: 16), // Bottom padding
+          ],
+        ),
       ),
     );
   }
@@ -140,8 +172,12 @@ class AppDrawer extends ConsumerWidget {
             )
           : null,
       trailing: vault.needsUnlock ? Icon(Icons.lock, size: 16, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6)) : null,
-      onTap: () {
-        Navigator.of(context).push(MaterialPageRoute(builder: (context) => VaultScreen(vault: vault)));
+      onTap: () async {
+        final result = await Navigator.of(context).push(MaterialPageRoute(builder: (context) => VaultScreen(vault: vault)));
+        // Refresh the vault list if we returned from a vault screen (indicating possible changes)
+        if (result == true) {
+          _loadVaults();
+        }
       },
       contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 2),
     );

@@ -185,10 +185,12 @@ class _EditCredentialScreenState extends ConsumerState<EditCredentialScreen> {
   Widget build(BuildContext context) {
     return BaseScaffold(
       title: 'Edit Credential',
+      automaticallyImplyLeading: true,
       actions: [
-        ShadButton(
+        IconButton(
           onPressed: _isLoading ? null : _updateCredential,
-          child: _isLoading ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)) : const Text('Update'),
+          icon: _isLoading ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.save),
+          tooltip: 'Update Credential',
         ),
       ],
       body: Form(
@@ -254,12 +256,6 @@ class _EditCredentialScreenState extends ConsumerState<EditCredentialScreen> {
             TextFormField(
               controller: _usernameController,
               decoration: const InputDecoration(labelText: 'Username', hintText: 'Enter username or email', border: OutlineInputBorder()),
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Username is required';
-                }
-                return null;
-              },
             ),
             AppSpacing.verticalSpacingMD,
 
@@ -276,12 +272,6 @@ class _EditCredentialScreenState extends ConsumerState<EditCredentialScreen> {
                         controller: _passwordController,
                         decoration: const InputDecoration(hintText: 'Enter password', border: OutlineInputBorder()),
                         obscureText: !_isPasswordVisible,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Password is required';
-                          }
-                          return null;
-                        },
                       ),
                     ),
                     AppSpacing.horizontalSpacingSM,

@@ -127,6 +127,7 @@ class _EditVaultScreenState extends ConsumerState<EditVaultScreen> {
     if (widget.vault.name == 'Main Vault') {
       return BaseScaffold(
         title: 'Edit Vault',
+        automaticallyImplyLeading: true,
         body: Center(
           child: Padding(
             padding: AppSpacing.paddingLG,
@@ -157,10 +158,12 @@ class _EditVaultScreenState extends ConsumerState<EditVaultScreen> {
 
     return BaseScaffold(
       title: 'Edit Vault',
+      automaticallyImplyLeading: true,
       actions: [
-        ShadButton(
+        IconButton(
           onPressed: _isLoading ? null : _updateVault,
-          child: _isLoading ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)) : const Text('Update'),
+          icon: _isLoading ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.save),
+          tooltip: 'Update Vault',
         ),
       ],
       body: Form(
@@ -178,6 +181,18 @@ class _EditVaultScreenState extends ConsumerState<EditVaultScreen> {
                 }
                 return null;
               },
+            ),
+            AppSpacing.verticalSpacingMD,
+
+            // Description
+            TextFormField(
+              controller: _descriptionController,
+              decoration: const InputDecoration(
+                labelText: 'Description',
+                hintText: 'Enter vault description (optional)',
+                border: OutlineInputBorder(),
+              ),
+              maxLines: 3,
             ),
             AppSpacing.verticalSpacingMD,
 
@@ -205,17 +220,6 @@ class _EditVaultScreenState extends ConsumerState<EditVaultScreen> {
               }).toList(),
             ),
             AppSpacing.verticalSpacingLG,
-
-            // Description
-            TextFormField(
-              controller: _descriptionController,
-              decoration: const InputDecoration(
-                labelText: 'Description',
-                hintText: 'Enter vault description (optional)',
-                border: OutlineInputBorder(),
-              ),
-              maxLines: 3,
-            ),
             AppSpacing.verticalSpacingLG,
 
             // Checkboxes
