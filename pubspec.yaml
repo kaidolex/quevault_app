@@ -1,5 +1,5 @@
 name: quevault_app
-description: "A new Flutter project."
+description: "QueVault - Offline Password Manager"
 publish_to: "none"
 
 version: 1.0.0+1
@@ -20,15 +20,30 @@ dependencies:
   shadcn_ui: ^0.29.0
   flutter_secure_storage: ^9.2.2
   crypto: ^3.0.6
+  pointycastle: ^3.7.3
   introduction_screen: ^3.1.14
   local_auth: ^2.3.0
   flutter_expandable_fab: ^2.5.2
+  file_picker: ^10.3.2
+  flutter_launcher_icons: ^0.14.4
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-
   flutter_lints: ^5.0.0
+
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/images/icons/quevault-logo.png"
+  min_sdk_android: 31
+  min_sdk_ios: 11
+  prefix: "Icon"
+  remove_alpha_ios: true
+  foreground_android: "#000000"
+  foreground_ios: "#000000"
+  output_image_path: "assets/images/icons/icon.png"
+  output_dir: "assets/imagesicons"
 
 flutter:
   uses-material-design: true

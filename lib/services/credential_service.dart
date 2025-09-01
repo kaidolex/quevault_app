@@ -1,8 +1,10 @@
 import 'dart:convert';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
+import 'package:flutter/foundation.dart';
 import '../models/credential.dart';
 import 'vault_service.dart';
+import 'encryption_key_service.dart';
 
 class CredentialService {
   static final CredentialService instance = CredentialService._internal();
@@ -23,12 +25,33 @@ class CredentialService {
 
   Future<void> createCredential(Credential credential) async {
     final db = await database;
+
+    // Encrypt password if encryption key is available
+    String password = credential.password;
+    String? passwordIV;
+    bool isEncrypted = false;
+
+    if (EncryptionKeyService.instance.isEncryptionKeyAvailable) {
+      final encryptionResult = EncryptionKeyService.instance.encryptPassword(credential.password);
+      if (encryptionResult != null) {
+        password = encryptionResult['encryptedPassword']!;
+        passwordIV = encryptionResult['iv']!;
+        isEncrypted = true;
+
+        if (kDebugMode) {
+          print('CredentialService: Password encrypted for credential ${credential.id}');
+        }
+      }
+    }
+
     await db.insert('credentials', {
       'id': credential.id,
       'name': credential.name,
       'vaultId': credential.vaultId,
       'username': credential.username,
-      'password': credential.password,
+      'password': password,
+      'passwordIV': passwordIV,
+      'isEncrypted': isEncrypted ? 1 : 0,
       'website': credential.website,
       'notes': credential.notes,
       'customFields': jsonEncode(credential.customFields.map((field) => field.toMap()).toList()),
@@ -60,13 +83,34 @@ class CredentialService {
 
   Future<void> updateCredential(Credential credential) async {
     final db = await database;
+
+    // Encrypt password if encryption key is available
+    String password = credential.password;
+    String? passwordIV;
+    bool isEncrypted = false;
+
+    if (EncryptionKeyService.instance.isEncryptionKeyAvailable) {
+      final encryptionResult = EncryptionKeyService.instance.encryptPassword(credential.password);
+      if (encryptionResult != null) {
+        password = encryptionResult['encryptedPassword']!;
+        passwordIV = encryptionResult['iv']!;
+        isEncrypted = true;
+
+        if (kDebugMode) {
+          print('CredentialService: Password encrypted for credential update ${credential.id}');
+        }
+      }
+    }
+
     await db.update(
       'credentials',
       {
         'name': credential.name,
         'vaultId': credential.vaultId,
         'username': credential.username,
-        'password': credential.password,
+        'password': password,
+        'passwordIV': passwordIV,
+        'isEncrypted': isEncrypted ? 1 : 0,
         'website': credential.website,
         'notes': credential.notes,
         'customFields': jsonEncode(credential.customFields.map((field) => field.toMap()).toList()),
@@ -104,12 +148,32 @@ class CredentialService {
       }
     }
 
+    // Decrypt password if it's encrypted
+    String password = map['password'];
+    bool isEncrypted = map['isEncrypted'] == 1;
+
+    if (isEncrypted && map['passwordIV'] != null) {
+      final decryptedPassword = EncryptionKeyService.instance.decryptPassword(map['password'], map['passwordIV']);
+      if (decryptedPassword != null) {
+        password = decryptedPassword;
+        if (kDebugMode) {
+          print('CredentialService: Password decrypted for credential ${map['id']}');
+        }
+      } else {
+        if (kDebugMode) {
+          print('CredentialService: Failed to decrypt password for credential ${map['id']}');
+        }
+      }
+    }
+
     return Credential(
       id: map['id'],
       name: map['name'],
       vaultId: map['vaultId'],
       username: map['username'],
-      password: map['password'],
+      password: password,
+      passwordIV: map['passwordIV'],
+      isEncrypted: isEncrypted,
       website: map['website'],
       notes: map['notes'],
       customFields: customFields,

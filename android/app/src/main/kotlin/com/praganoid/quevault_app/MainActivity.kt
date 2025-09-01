@@ -1,4 +1,4 @@
-package com.praganoid.quevault_app
+package com.praganoid.quevault
 
 import io.flutter.embedding.android.FlutterFragmentActivity 
 

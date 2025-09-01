@@ -64,6 +64,15 @@ class HiddenVaultViewModel extends StateNotifier<HiddenVaultState> {
 
   /// Get remaining taps needed
   int get remainingTaps => _requiredTaps - state.tapCount;
+
+  /// Trigger a refresh by updating the state
+  void triggerRefresh() {
+    if (kDebugMode) {
+      print('HiddenVaultViewModel: Triggering refresh');
+    }
+    // Force a state update to trigger app drawer refresh
+    state = state.copyWith();
+  }
 }
 
 /// Provider for HiddenVaultViewModel
