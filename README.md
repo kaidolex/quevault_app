@@ -289,6 +289,10 @@ flutter analyze --fatal-infos
 5. Ensure all tests pass
 6. Submit a pull request
 
+## 📄 License
+
+This project is licensed under a custom license that allows personal use only. Commercial use and redistribution are restricted. See the [LICENSE](LICENSE) file for full details.
+
 ## 🆘 Support
 
 ### Documentation
