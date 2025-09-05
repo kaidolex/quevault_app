@@ -291,7 +291,7 @@ flutter analyze --fatal-infos
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under a custom license that allows personal use only. Commercial use and redistribution are restricted. See the [LICENSE](LICENSE) file for full details.
 
 ## 🆘 Support
 
