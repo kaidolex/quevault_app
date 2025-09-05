@@ -289,10 +289,6 @@ flutter analyze --fatal-infos
 5. Ensure all tests pass
 6. Submit a pull request
 
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
 ## 🆘 Support
 
 ### Documentation
@@ -308,31 +304,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ### Security
 
-- Report security vulnerabilities privately to security@quevault.app
+- Report security vulnerabilities privately to kaidolex@praganoid.com
 - Do not disclose security issues publicly until resolved
-
-## 🗺️ Roadmap
-
-### Version 1.1
-
-- [ ] Cloud backup (optional)
-- [ ] Password strength analyzer
-- [ ] Auto-fill browser integration
-- [ ] Advanced search and filtering
-
-### Version 1.2
-
-- [ ] Two-factor authentication support
-- [ ] Password sharing (encrypted)
-- [ ] Advanced vault permissions
-- [ ] Audit logs
-
-### Version 2.0
-
-- [ ] Team/enterprise features
-- [ ] API integration
-- [ ] Advanced reporting
-- [ ] Custom themes
 
 ---
 
